@@ -1,0 +1,25 @@
+{
+  "name": "Ruleta Trodia Racing",
+  "short_name": "Ruleta",
+  "description": "Ruleta de premios de Trodia Racing",
+  "start_url": "./Index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ECECED",
+  "theme_color": "#12235A",
+  "icons": [
+    {
+      "src": "./Img/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./Img/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

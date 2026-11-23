@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Test de Reacción</title>
+<meta name="description" content="¿Qué tan rápido reaccionás? Probá tu tiempo de salida en el semáforo de Fórmula 1.">
+<meta name="theme-color" content="#f5f5f5">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f5f5f5;
+    --white:#ffffff;
+    --ink:#07337c;          /* azul Trodia Fest */
+    --ink-soft:#0a46a8;
+    --orange:#f25500;       /* naranja Trodia Fest */
+    --orange-dark:#d94b00;
+    --muted:#5f7094;
+    --line:#dfe5f0;
+    --black:#000000;
+    --pod:#121212;
+    --lamp-off:#2b2b2b;
+    --red:#e5251c;
+    --green:#12a150;
+    --font:"Lexend",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  /* Todo en una sola pantalla: sin scroll de página, las medidas se adaptan al alto (vh) */
+  body{
+    font-family:var(--font);
+    background:var(--bg);
+    color:var(--ink);
+    display:flex;flex-direction:column;
+    height:100vh;height:100dvh;overflow:hidden;
+    padding-top:env(safe-area-inset-top,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+    -webkit-tap-highlight-color:transparent;
+    -webkit-user-select:none;user-select:none;
+  }
+
+  /* ---------- Nav ---------- */
+  .site-header{flex:none;background:var(--white);border-bottom:1px solid var(--line)}
+  .site-header .inner{
+    display:flex;align-items:center;justify-content:space-between;gap:16px;
+    padding:clamp(6px,1.4vh,14px) clamp(12px,2vw,28px);
+  }
+  .brand-logo{display:block;height:clamp(28px,5.5vh,50px);width:auto;max-width:60vw;-webkit-user-drag:none}
+  .title{
+    font-weight:800;text-transform:uppercase;line-height:1;letter-spacing:-.01em;
+    font-size:clamp(18px,4.2vh,42px);white-space:nowrap;
+  }
+  .title span{color:var(--orange)}
+
+  /* ---------- Layout ---------- */
+  main{flex:1;min-height:0;display:flex}
+  .stage-wrap{
+    flex:1;min-height:0;width:100%;
+    display:grid;gap:clamp(10px,2vh,22px);
+    grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);
+    padding:clamp(10px,2vh,22px) clamp(12px,2vw,28px);
+  }
+
+  /* ---------- Stage ---------- */
+  .stage{
+    position:relative;min-height:0;touch-action:manipulation;
+    background:var(--white);border:3px solid var(--line);border-radius:24px;
+    padding:clamp(10px,2vh,28px) 18px;cursor:pointer;outline:none;
+    display:flex;flex-direction:column;align-items:center;justify-content:space-evenly;
+    gap:clamp(8px,1.6vh,22px);
+  }
+  .stage:focus-visible{border-color:var(--ink)}
+  .stage.state-foul{border-color:var(--red)}
+  /* ¡YA! = las luces del semáforo se ponen verdes */
+  .stage.state-go .lamp{
+    background:var(--green);
+    box-shadow:0 0 clamp(10px,2.2vh,24px) 3px rgba(40,230,120,.95),0 0 clamp(28px,6.5vh,70px) clamp(6px,1.4vh,16px) rgba(40,230,120,.55);
+  }
+
+  .gantry{
+    display:flex;gap:clamp(6px,1.6vh,16px);
+    background:var(--black);border-radius:18px;
+    padding:clamp(8px,1.8vh,18px);
+  }
+  .pod{
+    display:flex;flex-direction:column;gap:clamp(6px,1.3vh,12px);
+    background:var(--pod);padding:clamp(5px,1.1vh,10px);border-radius:12px;
+  }
+  .lamp{
+    width:clamp(28px,min(8vw,10.5vh),88px);aspect-ratio:1;border-radius:50%;
+    background:var(--lamp-off);
+  }
+  /* Efecto de luz: halo alrededor de las luces encendidas (sin transición para no alterar la medición) */
+  .pod.on .lamp{
+    background:var(--red);
+    box-shadow:0 0 clamp(8px,1.8vh,20px) 2px rgba(229,37,28,.9),0 0 clamp(24px,5.5vh,60px) clamp(4px,1vh,12px) rgba(229,37,28,.45);
+  }
+
+  .readout{text-align:center;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(2px,.6vh,6px)}
+  .msg{font-weight:700;text-transform:uppercase;letter-spacing:.04em;font-size:clamp(16px,min(3vw,3.6vh),28px)}
+  .time{
+    font-weight:800;line-height:1;
+    font-size:clamp(44px,min(10vw,14vh),120px);font-variant-numeric:tabular-nums;
+  }
+  .time small{font-size:.34em;color:var(--muted);margin-left:6px;font-weight:600}
+  .verdict{color:var(--orange);font-weight:600;font-size:clamp(14px,2.2vh,19px);min-height:1.3em}
+  .hint{color:var(--muted);font-size:clamp(12px,1.8vh,15px)}
+  .state-go .msg{color:var(--green);font-size:clamp(44px,min(11vw,16vh),140px);letter-spacing:.02em}
+  .state-foul .msg,.state-foul .time{color:var(--red)}
+
+  .btn{
+    appearance:none;border:0;cursor:pointer;font-family:var(--font);
+    font-weight:600;font-size:clamp(15px,2.4vh,19px);color:#fff;background:var(--orange);
+    padding:clamp(10px,1.8vh,16px) clamp(24px,3vw,40px);border-radius:999px;transition:background .15s;
+  }
+  .btn:hover{background:var(--orange-dark)}
+
+  /* ---------- Panel lateral ---------- */
+  .panel{
+    min-height:0;display:grid;gap:clamp(8px,1.6vh,18px);
+    grid-template-rows:auto minmax(0,1fr) auto;
+  }
+  .card{
+    min-height:0;display:flex;flex-direction:column;
+    background:var(--white);border:1px solid var(--line);border-radius:20px;
+    padding:clamp(10px,1.8vh,20px);
+  }
+  .card h2{
+    font-weight:700;font-size:clamp(11px,1.8vh,15px);text-transform:uppercase;letter-spacing:.08em;
+    color:var(--orange);margin-bottom:clamp(6px,1.2vh,14px);flex:none;
+  }
+  .stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(6px,1vw,12px)}
+  .stat{background:var(--bg);border-radius:14px;padding:clamp(6px,1.2vh,14px)}
+  .stat b{display:block;font-size:clamp(18px,min(2.4vw,3.6vh),32px);font-weight:800;font-variant-numeric:tabular-nums}
+  .stat span{color:var(--muted);font-size:clamp(8px,1.4vh,11px);text-transform:uppercase;letter-spacing:.04em;font-weight:500;line-height:1.2;display:block}
+  .stat.best b{color:var(--orange)}
+  ol.list{
+    list-style:none;display:flex;flex-direction:column;gap:clamp(3px,.7vh,6px);
+    flex:1;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;
+  }
+  ol.list li{
+    flex:none;display:flex;justify-content:space-between;align-items:center;gap:10px;
+    background:var(--bg);border-radius:10px;padding:clamp(3px,.8vh,9px) clamp(8px,1vw,14px);
+    font-variant-numeric:tabular-nums;
+  }
+  ol.list li .n{color:var(--muted);font-size:clamp(11px,1.7vh,13px);min-width:30px}
+  ol.list li .name{flex:1;font-weight:600;font-size:clamp(12px,2vh,16px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  ol.list li .v{font-weight:700;font-size:clamp(13px,2.1vh,17px)}
+  ol.list li.foul .v{color:var(--red)}
+  ol.list li.best .v{color:var(--orange)}
+  /* Historial como fichas compactas (deja más lugar al ranking) */
+  ol.history{--chip:clamp(24px,3.8vh,34px);flex:none;flex-direction:row;flex-wrap:wrap;overflow:hidden;max-height:calc(var(--chip) * 2 + 6px)}
+  ol.history li{justify-content:center;height:var(--chip);padding:0 clamp(8px,1vw,12px);font-weight:700;font-size:clamp(12px,1.9vh,15px)}
+  ol.history li.foul{color:var(--red)}
+  ol.history li.best{color:var(--orange)}
+  ol.rank li:first-child .n,ol.rank li:first-child .v{color:var(--orange)}
+  .empty{color:var(--muted);font-size:clamp(12px,1.8vh,14px)}
+
+  /* ---------- Modal + teclado en pantalla ---------- */
+  .modal{
+    position:fixed;inset:0;z-index:10;background:rgba(7,51,124,.6);
+    display:flex;align-items:center;justify-content:center;
+    padding:12px;padding-bottom:calc(12px + env(safe-area-inset-bottom,0px));
+  }
+  .modal[hidden]{display:none}
+  .sheet{
+    background:var(--white);border-radius:24px;width:100%;max-width:min(900px,96vw);max-height:100%;
+    padding:clamp(10px,2vh,26px);display:flex;flex-direction:column;gap:clamp(6px,1.3vh,14px);
+    overflow:auto;
+  }
+  .sheet-top{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .sheet-top h3{font-size:clamp(16px,2.8vh,24px);font-weight:700}
+  .sheet-top .t{font-size:clamp(20px,3.8vh,34px);font-weight:800;color:var(--orange);font-variant-numeric:tabular-nums}
+  .name-box{
+    display:flex;align-items:center;min-height:clamp(46px,8vh,68px);padding:6px 18px;
+    border:3px solid var(--ink);border-radius:14px;background:var(--white);
+    font-size:clamp(22px,min(5vw,5.5vh),42px);font-weight:800;letter-spacing:.08em;text-transform:uppercase;
+    overflow:hidden;white-space:pre;
+  }
+  .name-box .ph{color:#a9b5cc;font-weight:600;letter-spacing:.04em}
+  .name-box .caret{display:inline-block;width:3px;height:1em;background:var(--ink);margin-left:3px;animation:blink 1s steps(1) infinite}
+  .name-box.err{border-color:var(--red)}
+  .name-err{color:var(--red);font-weight:600;font-size:clamp(13px,2vh,15px);min-height:1.4em}
+  @keyframes blink{50%{opacity:0}}
+  .kb{display:flex;flex-direction:column;gap:clamp(5px,1vh,10px)}
+  .kb-row{display:flex;gap:clamp(5px,1vw,10px)}
+  .key{
+    flex:1;min-width:0;height:clamp(40px,8vh,68px);
+    display:flex;align-items:center;justify-content:center;
+    background:var(--bg);border:2px solid var(--line);border-radius:12px;
+    font-family:var(--font);font-weight:700;font-size:clamp(16px,3vh,26px);color:var(--ink);
+    touch-action:manipulation;cursor:pointer;
+  }
+  .key:active,.key.pressed{background:var(--ink);border-color:var(--ink);color:#fff}
+  .key.wide{flex:1.7}
+  .key.space{flex:4}
+  .key.dark{background:var(--ink);border-color:var(--ink);color:#fff;font-size:clamp(14px,2.4vh,20px)}
+  .key.dark:active{background:var(--ink-soft)}
+  .key.save{background:var(--orange);border-color:var(--orange);color:#fff;font-size:clamp(14px,2.4vh,20px)}
+  .key.save.off{background:var(--line);border-color:var(--line);color:#9aa8c2}
+  .key.skip{background:var(--white);font-size:clamp(13px,2.2vh,18px)}
+
+  /* Pantallas bajas: historial en una sola fila para que entre el Top 10 completo */
+  @media (max-height:800px){ ol.history{max-height:var(--chip)} }
+
+  /* Pantallas angostas (celular vertical): se apila y se permite scroll */
+  @media (max-width:860px){
+    body{height:auto;min-height:100dvh;overflow:auto}
+    main{flex:none}
+    .stage-wrap{grid-template-columns:1fr}
+    .stage{min-height:420px}
+    .panel{grid-template-rows:none}
+    ol.list{max-height:240px}
+    .site-header .inner{flex-wrap:wrap}
+    .brand-logo{height:34px}
+    .title{font-size:clamp(16px,5vw,24px)}
+  }
+  @media (prefers-reduced-motion:reduce){.name-box .caret{animation:none}}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="inner">
+    <img class="brand-logo" src="./img/trodia_fest.png" alt="">
+    <h1 class="title">Test de <span>reacción</span></h1>
+  </div>
+</header>
+
+<main>
+  <div class="stage-wrap">
+    <div class="stage" id="stage" role="button" tabindex="0" aria-label="Zona de prueba. Tocá o presioná espacio cuando se apaguen las luces.">
+      <div class="gantry" id="gantry" aria-hidden="true">
+        <div class="pod"><div class="lamp"></div><div class="lamp"></div></div>
+        <div class="pod"><div class="lamp"></div><div class="lamp"></div></div>
+        <div class="pod"><div class="lamp"></div><div class="lamp"></div></div>
+        <div class="pod"><div class="lamp"></div><div class="lamp"></div></div>
+        <div class="pod"><div class="lamp"></div><div class="lamp"></div></div>
+      </div>
+
+      <div class="readout" aria-live="polite">
+        <div class="msg" id="msg">Listo para largar</div>
+        <div class="time" id="time" hidden>0<small>ms</small></div>
+        <div class="verdict" id="verdict"></div>
+        <div class="hint" id="hint">Tocá la pantalla o presioná <b>Espacio</b> para empezar</div>
+      </div>
+
+      <button class="btn" id="startBtn" type="button">Comenzar</button>
+    </div>
+
+    <aside class="panel">
+      <div class="card">
+        <h2>Estadísticas</h2>
+        <div class="stats">
+          <div class="stat best"><b id="bestVal">—</b><span>Mejor (ms)</span></div>
+          <div class="stat"><b id="avgVal">—</b><span>Promedio (ms)</span></div>
+          <div class="stat"><b id="lastVal">—</b><span>Último (ms)</span></div>
+          <div class="stat"><b id="countVal">0</b><span>Intentos</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Ranking · Top 10</h2>
+        <ol class="list rank" id="rankList"></ol>
+        <p class="empty" id="rankEmpty">Todavía no hay nombres en el ranking.</p>
+      </div>
+      <div class="card">
+        <h2>Historial</h2>
+        <ol class="list history" id="history"></ol>
+        <p class="empty" id="emptyMsg">Todavía no hiciste ningún intento.</p>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<!-- Ingreso de nombre con teclado en pantalla -->
+<div class="modal" id="modal" hidden role="dialog" aria-modal="true" aria-label="Ingresá tu nombre">
+  <div class="sheet">
+    <div class="sheet-top">
+      <h3>¡Terminaste! Ingresá tu nombre</h3>
+      <div class="t" id="modalTime">0 ms</div>
+    </div>
+    <div class="name-box" id="nameBox" aria-live="polite"></div>
+    <div class="name-err" id="nameErr" aria-live="polite"></div>
+    <div class="kb" id="kb"></div>
+  </div>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  const STORE_KEY = 'reaction_test_v1';
+  const RANK_KEY = 'reaction_ranking_v1';
+  const MAX_HISTORY = 20;
+  const MAX_RANK_STORED = 100;
+  const RANK_SHOWN = 10;
+  const MAX_NAME = 12;
+  const LIGHT_INTERVAL = 800;
+  const HOLD_MIN = 400, HOLD_MAX = 3200;
+  const NAMING_DELAY = 700; // deja ver el tiempo antes de abrir el teclado
+  const ST = { IDLE:'idle', LIGHTS:'lights', HOLD:'hold', GO:'go', DONE:'done', FOUL:'foul', NAMING:'naming' };
+
+  const $ = id => document.getElementById(id);
+  const stage = $('stage'), msg = $('msg'), timeEl = $('time'), verdict = $('verdict'),
+        hint = $('hint'), startBtn = $('startBtn'), pods = [...document.querySelectorAll('.pod')],
+        historyEl = $('history'), emptyMsg = $('emptyMsg'),
+        rankList = $('rankList'), rankEmpty = $('rankEmpty'),
+        modal = $('modal'), nameBox = $('nameBox'), kb = $('kb'), modalTime = $('modalTime');
+
+  let state = ST.IDLE;
+  let timers = [];
+  let tGo = 0;
+  let lastMs = 0;
+  let nameBuf = '';
+  let modalOpen = false;
+  let results = loadJSON(STORE_KEY);
+  let ranking = loadJSON(RANK_KEY);
+
+  /* ---------- Storage ---------- */
+  function loadJSON(key){
+    try { const r = JSON.parse(localStorage.getItem(key)); return Array.isArray(r) ? r : []; }
+    catch { return []; }
+  }
+  function saveJSON(key, val){
+    try { localStorage.setItem(key, JSON.stringify(val)); } catch {}
+  }
+
+  /* ---------- Helpers ---------- */
+  const clearTimers = () => { timers.forEach(clearTimeout); timers = []; };
+  const setLights = n => pods.forEach((p,i) => p.classList.toggle('on', i < n));
+  const setState = s => {
+    state = s;
+    stage.classList.toggle('state-go', s === ST.GO);
+    stage.classList.toggle('state-foul', s === ST.FOUL);
+  };
+  const rate = ms =>
+    ms < 160 ? '¡Reflejos de piloto de F1!' :
+    ms < 200 ? 'Increíble, nivel élite' :
+    ms < 250 ? 'Excelente reacción' :
+    ms < 300 ? 'Muy buena, por encima del promedio' :
+    ms < 400 ? 'Reacción promedio' :
+    'Calentá los neumáticos y probá de nuevo';
+
+  /* ---------- Flujo ---------- */
+  function start(){
+    clearTimers();
+    setLights(0);
+    setState(ST.LIGHTS);
+    msg.textContent = 'Atento…';
+    timeEl.hidden = true;
+    verdict.textContent = '';
+    hint.textContent = 'No te adelantes: esperá a que se apaguen todas';
+    startBtn.hidden = true;
+
+    for (let i = 1; i <= 5; i++){
+      timers.push(setTimeout(() => setLights(i), i * LIGHT_INTERVAL));
+    }
+    const hold = HOLD_MIN + Math.random() * (HOLD_MAX - HOLD_MIN);
+    timers.push(setTimeout(() => setState(ST.HOLD), 5 * LIGHT_INTERVAL));
+    timers.push(setTimeout(go, 5 * LIGHT_INTERVAL + hold));
+  }
+
+  function go(){
+    setLights(0);
+    setState(ST.GO);
+    msg.textContent = '¡YA!';
+    hint.textContent = '';
+    tGo = performance.now();
+  }
+
+  function react(){
+    const ms = Math.round(performance.now() - tGo);
+    lastMs = ms;
+    setState(ST.NAMING);
+    msg.textContent = 'Tu tiempo';
+    timeEl.innerHTML = ms + '<small>ms</small>';
+    timeEl.hidden = false;
+    verdict.textContent = rate(ms);
+    hint.textContent = '';
+    results.push({ ms, foul:false });
+    saveJSON(STORE_KEY, results.slice(-MAX_HISTORY));
+    render();
+    timers.push(setTimeout(openNaming, NAMING_DELAY));
+  }
+
+  function foul(){
+    clearTimers();
+    setLights(0);
+    setState(ST.FOUL);
+    msg.textContent = '¡Salida en falso!';
+    timeEl.innerHTML = 'FALSA';
+    timeEl.hidden = false;
+    verdict.textContent = 'Te adelantaste a las luces';
+    hint.textContent = 'Tocá la pantalla o presioná Espacio para reintentar';
+    startBtn.textContent = 'Reintentar';
+    startBtn.hidden = false;
+    results.push({ ms:null, foul:true });
+    saveJSON(STORE_KEY, results.slice(-MAX_HISTORY));
+    render();
+  }
+
+  function press(){
+    switch (state){
+      case ST.IDLE:
+      case ST.DONE:
+      case ST.FOUL: start(); break;
+      case ST.LIGHTS:
+      case ST.HOLD: foul(); break;
+      case ST.GO: react(); break;
+      case ST.NAMING: break;
+    }
+  }
+
+  function finishNaming(){
+    modal.hidden = true;
+    modalOpen = false;
+    setState(ST.DONE);
+    hint.textContent = 'Tocá la pantalla o presioná Espacio para reintentar';
+    startBtn.textContent = 'Reintentar';
+    startBtn.hidden = false;
+  }
+
+  /* MODERATION START */
+  /* ---------- Filtro de nombres (local, sin API) ---------- */
+  // Palabras que se bloquean solo si aparecen como palabra completa
+  // (evita falsos positivos: "Vergara", "Pijama", "Computadora", "Ignazio"...)
+  const BLOCK_WORDS = [
+    // insultos y vulgaridades (es)
+    'puta','putas','puto','putos','putita','putito','hdp','ctm','csm','lpqtp','lpqtpm',
+    'pendeja','pendejo','pendejos','pelotudo','pelotuda','pelotudos','forro','forra','garca',
+    'mierda','mierdas','culo','culos','culiao','culiado','culiada','orto',
+    'verga','vergon','pija','pijas','pijudo','poronga','chota','choto',
+    'pajero','pajera','follar','follame','chupala','chupame','mamada','mamame',
+    'tetas','vagina','pene','penes','semen','sexo','porno','porn','pornhub','orgasmo',
+    'violar','violacion','pederasta','pedofilo','pedofilia','pedophile',
+    // discriminación / ofensas
+    'maricon','maricones','trolo','trolos','sudaca','tortillera','joto','negrata',
+    'mogolico','mongolico','mongolo','retrasado','retrasada','subnormal',
+    'matate','suicidate','kys','terrorista','genocida',
+    // odio / extremismo
+    'nazi','nazis','neonazi','nazismo','heil','reich','swastika','esvastica',
+    'hitler','mussolini','goebbels','himmler','eichmann','mengele','binladen',
+    // inglés
+    'fuck','fucker','fucked','fucking','fck','fuk','fvck','shit','shitty','shithead','bullshit',
+    'bitch','bitches','biatch','bastard','asshole','dick','dickhead','cock','cunt','cunts',
+    'pussy','whore','slut','sluts','nigger','niggers','nigga','niggas','faggot','fag','fags',
+    'retard','retarded','tranny','chink','spic','kike','wetback','rape','rapist','cum','jizz',
+    'nude','nudes','penis','dildo','blowjob','handjob'
+  ];
+  // Términos largos e inequívocos: se bloquean aunque estén dentro de otra palabra
+  // o con espacios en el medio ("H I T L E R", "hijodeputa")
+  const BLOCK_CONTAINS = [
+    'hitler','nazism','neonazi','siegheil','heilhitler','kukluxklan','swastika','esvastica',
+    'mussolini','goebbels','himmler','eichmann','mengele','binladen','alqaeda','alqaida','holohoax',
+    'hijodeputa','hijoputa','hijueputa','putamadre','putaquete','putaquetepario',
+    'conchadetumadre','conchetumadre','conchetumare','conchatumadre',
+    'pendejo','pelotud','mierda','maricon','chupapija','chupamela','chupala',
+    'masturb','pedofil','pederast','pedophile','violador','violacion',
+    'fuck','motherfuck','asshole','bitch','bastard','cocksucker','nigger','faggot'
+  ];
+  const BLOCK_SET = new Set(BLOCK_WORDS);
+  const LEET = { '0':'o','3':'e','4':'a','5':'s','7':'t','@':'a','$':'s','!':'i' };
+  const stripAccents = t => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  // "pendejooo" -> "pendejo" (n=1) o "pendejoo" (n=2); las repeticiones normales (nigger, pussy) no se tocan
+  const shrink = (t, n) => t.replace(/(.)\1{2,}/g, (m, c) => c.repeat(n));
+
+  function isBlockedName(name){
+    const base = stripAccents(String(name).toLowerCase());
+    const compact = base.replace(/\s+/g, '');
+    if (compact.includes('1488') || compact.includes('kkk')) return true;
+
+    for (const one of ['i','l']){                     // el "1" puede ser i o l
+      const leet = base.replace(/[013457@$!]/g, c => c === '1' ? one : LEET[c]);
+      const rawTokens = leet.replace(/[^a-z]+/g, ' ').trim().split(' ').filter(Boolean);
+      for (const n of [1, 2]){
+        const tokens = rawTokens.map(t => shrink(t, n));
+        const squashed = shrink(rawTokens.join(''), n);
+        if (tokens.some(t => BLOCK_SET.has(t))) return true;                    // palabra completa
+        if (BLOCK_CONTAINS.some(w => squashed.includes(w))) return true;       // contiene término prohibido
+        if (squashed.length >= 4 && BLOCK_SET.has(squashed)) return true;      // letras separadas: "P U T A"
+      }
+    }
+    return false;
+  }
+  /* MODERATION END */
+
+  /* ---------- Nombre + teclado en pantalla ---------- */
+  const KB_ROWS = [
+    ['1','2','3','4','5','6','7','8','9','0'],
+    ['Q','W','E','R','T','Y','U','I','O','P'],
+    ['A','S','D','F','G','H','J','K','L','Ñ'],
+    ['Z','X','C','V','B','N','M','BACK'],
+    ['SKIP','SPACE','SAVE']
+  ];
+
+  function buildKeyboard(){
+    kb.innerHTML = '';
+    KB_ROWS.forEach(row => {
+      const r = document.createElement('div');
+      r.className = 'kb-row';
+      row.forEach(k => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'key';
+        b.dataset.k = k;
+        if (k === 'BACK'){ b.textContent = '⌫'; b.classList.add('dark','wide'); b.setAttribute('aria-label','Borrar'); }
+        else if (k === 'SPACE'){ b.textContent = 'Espacio'; b.classList.add('space'); }
+        else if (k === 'SAVE'){ b.textContent = 'Guardar'; b.classList.add('save','wide'); }
+        else if (k === 'SKIP'){ b.textContent = 'Omitir'; b.classList.add('skip','wide'); }
+        else b.textContent = k;
+        r.appendChild(b);
+      });
+      kb.appendChild(r);
+    });
+  }
+
+  const nameErr = $('nameErr');
+  function showErr(t){ nameErr.textContent = t; nameBox.classList.add('err'); }
+  function clearErr(){ nameErr.textContent = ''; nameBox.classList.remove('err'); }
+
+  function updateName(){
+    nameBox.innerHTML = '';
+    if (!nameBuf){
+      const ph = document.createElement('span');
+      ph.className = 'ph';
+      ph.textContent = 'TU NOMBRE';
+      nameBox.appendChild(ph);
+    } else {
+      nameBox.appendChild(document.createTextNode(nameBuf));
+    }
+    const caret = document.createElement('span');
+    caret.className = 'caret';
+    nameBox.appendChild(caret);
+    const saveKey = kb.querySelector('[data-k="SAVE"]');
+    if (saveKey) saveKey.classList.toggle('off', !nameBuf.trim());
+  }
+
+  function openNaming(){
+    if (state !== ST.NAMING) return;
+    nameBuf = '';
+    clearErr();
+    modalTime.textContent = lastMs + ' ms';
+    modal.hidden = false;
+    modalOpen = true;
+    updateName();
+  }
+
+  function typeChar(ch){
+    clearErr();
+    if (nameBuf.length >= MAX_NAME) return;
+    if (ch === ' ' && (!nameBuf || nameBuf.endsWith(' '))) return; // sin espacios iniciales/dobles
+    nameBuf += ch;
+    updateName();
+  }
+  function backspace(){
+    clearErr();
+    nameBuf = nameBuf.slice(0, -1);
+    updateName();
+  }
+  function saveName(){
+    const name = nameBuf.trim();
+    if (!name) return;
+    if (isBlockedName(name)){
+      showErr('Nombre no permitido. Probá con otro.');
+      return;
+    }
+    const entry = { name, ms:lastMs, ts:Date.now() };
+    ranking.push(entry);
+    ranking.sort((a,b) => a.ms - b.ms || a.ts - b.ts);
+    const pos = ranking.indexOf(entry) + 1;
+    ranking = ranking.slice(0, MAX_RANK_STORED);
+    saveJSON(RANK_KEY, ranking);
+    render();
+    finishNaming();
+    verdict.textContent = pos <= RANK_SHOWN
+      ? name + ' · puesto #' + pos + ' del ranking'
+      : name + ' · fuera del top ' + RANK_SHOWN;
+  }
+  function skipName(){ finishNaming(); }
+
+  function handleKey(k){
+    if (k === 'BACK') backspace();
+    else if (k === 'SPACE') typeChar(' ');
+    else if (k === 'SAVE') saveName();
+    else if (k === 'SKIP') skipName();
+    else typeChar(k);
+  }
+
+  // pointerdown = respuesta inmediata en pantallas táctiles
+  kb.addEventListener('pointerdown', e => {
+    const key = e.target.closest('[data-k]');
+    if (!key) return;
+    e.preventDefault();
+    key.classList.add('pressed');
+    setTimeout(() => key.classList.remove('pressed'), 120);
+    handleKey(key.dataset.k);
+  });
+  kb.addEventListener('click', e => e.preventDefault());
+
+  /* ---------- Render ---------- */
+  function render(){
+    const valid = results.filter(r => !r.foul).map(r => r.ms);
+    const best = valid.length ? Math.min(...valid) : null;
+    const avg = valid.length ? Math.round(valid.reduce((a,b) => a+b, 0) / valid.length) : null;
+    const last = results.length ? results[results.length-1] : null;
+
+    $('bestVal').textContent = best ?? '—';
+    $('avgVal').textContent = avg ?? '—';
+    $('lastVal').textContent = last ? (last.foul ? 'Falsa' : last.ms) : '—';
+    $('countVal').textContent = results.length;
+
+    historyEl.innerHTML = '';
+    emptyMsg.hidden = results.length > 0;
+    results.slice().reverse().slice(0, 12).forEach(r => {
+      const li = document.createElement('li');
+      if (r.foul) li.className = 'foul';
+      else if (r.ms === best) li.className = 'best';
+      li.textContent = r.foul ? 'Falsa' : r.ms + ' ms';
+      historyEl.appendChild(li);
+    });
+
+    rankList.innerHTML = '';
+    rankEmpty.hidden = ranking.length > 0;
+    ranking.slice(0, RANK_SHOWN).forEach((r, i) => {
+      const li = document.createElement('li');
+      const sn = document.createElement('span'); sn.className = 'n'; sn.textContent = (i + 1) + '.';
+      const nm = document.createElement('span'); nm.className = 'name'; nm.textContent = r.name;
+      const sv = document.createElement('span'); sv.className = 'v'; sv.textContent = r.ms + ' ms';
+      li.append(sn, nm, sv);
+      rankList.appendChild(li);
+    });
+  }
+
+  /* ---------- Eventos ---------- */
+  stage.addEventListener('pointerdown', e => {
+    if (modalOpen) return;
+    e.preventDefault();
+    press();
+  });
+
+  document.addEventListener('keydown', e => {
+    if (e.repeat) return;
+    if (modalOpen){
+      // el teclado físico también funciona mientras se ingresa el nombre
+      if (e.key === 'Backspace'){ e.preventDefault(); backspace(); }
+      else if (e.key === 'Enter'){ e.preventDefault(); saveName(); }
+      else if (e.key === 'Escape'){ e.preventDefault(); skipName(); }
+      else if (/^[a-zA-ZñÑ0-9 ]$/.test(e.key)){ e.preventDefault(); typeChar(e.key.toUpperCase()); }
+      return;
+    }
+    if (e.code === 'Space' || e.code === 'Enter'){
+      e.preventDefault();
+      press();
+    }
+  });
+  startBtn.addEventListener('click', e => e.preventDefault());
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden && (state === ST.LIGHTS || state === ST.HOLD || state === ST.GO)){
+      clearTimers(); setLights(0); setState(ST.IDLE);
+      msg.textContent = 'Prueba cancelada';
+      hint.textContent = 'Tocá la pantalla o presioná Espacio para empezar';
+      startBtn.textContent = 'Comenzar';
+      startBtn.hidden = false;
+    }
+  });
+
+  buildKeyboard();
+  render();
+})();
+</script>
+</body>
+</html>
