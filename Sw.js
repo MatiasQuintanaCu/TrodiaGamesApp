@@ -1,9 +1,9 @@
-const CACHE_NAME = 'trodia-minijuegos-v7';
+const CACHE_NAME = 'trodia-minijuegos-v8';
 const CORE_ASSETS = [
-  './', './index.html', './reaccion.html', './ruleta.html', './pitstop.html', './frenada.html', './conos.html', './armar.html',
+  './', './index.html', './reaccion.html', './ruleta.html', './pitstop.html', './frenada.html', './conos.html', './armar.html', './presion.html',
   './app.css', './shared.js', './Manifest.json',
   './img/trodia_fest.png', './fonts/lexend-latin-wght-normal.woff2',
-  './img/logo.png', './img/Reaccion.png', './img/PITSTOP.png', './img/ruleta.png', './img/Frenada.png', './img/Conos.png', './img/Armar.png'
+  './img/logo.png', './img/Reaccion.png', './img/PITSTOP.png', './img/ruleta.png', './img/Frenada.png', './img/Conos.png', './img/Armar.png', './img/Presion.png'
 ];
 const TAILWIND = 'https://cdn.tailwindcss.com/3.4.17';
 

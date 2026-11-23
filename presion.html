@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#07337c">
+<link rel="manifest" href="./Manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="./img/logo.png">
+<link rel="apple-touch-icon" href="./img/logo.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="preload" href="./fonts/lexend-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="./app.css">
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script src="./shared.js"></script>
+<title>Presión de neumáticos | Trodia Fest</title>
+<meta name="apple-mobile-web-app-title" content="Presión">
+<meta name="description" content="Clavá la presión justa de los neumáticos frenando la barra en el momento exacto.">
+<style>
+#stage{background:#0a1a3f;border-color:#16306b}
+.floor{background:radial-gradient(ellipse 70% 60% at 50% 55%,#1d3b80 0%,#0d2150 55%,#071230 100%)}
+
+</style>
+</head>
+<body class="font-sans bg-ink text-ink flex flex-col" data-title='Presión <span class="text-or">de neumáticos</span>' data-back="1">
+<header id="hdr"></header>
+<main class="flex-1 min-h-0 overflow-y-auto">
+ <div class="gm grid lg:grid-cols-[1.5fr_1fr] gap-3 p-3 sm:p-4 lg:h-full">
+  <div id="stage" class="border-[3px] rounded-3xl p-3 sm:p-4 flex flex-col gap-3 min-h-[max(500px,calc(100dvh-140px))] lg:min-h-0">
+    <div class="flex items-center justify-between gap-3">
+      <div class="min-w-0">
+        <div id="msg" class="font-bold uppercase tracking-wide text-white text-base sm:text-xl">Listo para ajustar</div>
+        <div id="verdict" class="text-or font-semibold min-h-[1.3em] text-sm"></div>
+        <div id="hint" class="text-[#9fb0d6] text-sm">Tocá <b>Comenzar</b> y frená la barra justo en el valor objetivo (3 rondas)</div>
+      </div>
+      <div id="time" class="tm font-extrabold leading-none tabular-nums text-4xl sm:text-6xl text-white flex-none"></div>
+    </div>
+    <div id="floor" class="floor relative flex-1 min-h-[280px] rounded-2xl overflow-hidden flex items-center justify-center">
+<div class="w-full max-w-2xl px-3 sm:px-8 flex flex-col items-center gap-3 sm:gap-5">
+  <svg viewBox="0 0 160 160" class="flex-none" style="height:min(26vh,9rem);width:auto" aria-hidden="true">
+    <circle cx="80" cy="80" r="74" fill="#151a21" stroke="#0b0e13" stroke-width="4"/>
+    <circle cx="80" cy="80" r="62" fill="none" stroke="#232a35" stroke-width="3" stroke-dasharray="6 6"/>
+    <circle cx="80" cy="80" r="46" fill="#0d2150" stroke="#f25500" stroke-width="5"/>
+    <text id="live" x="80" y="88" text-anchor="middle" font-size="26" font-weight="800" fill="#fff" font-family="Lexend,system-ui,sans-serif">--</text>
+    <text x="80" y="108" text-anchor="middle" font-size="11" font-weight="600" fill="#9fb0d6" font-family="Lexend,system-ui,sans-serif">PSI</text>
+  </svg>
+  <div class="text-center"><div class="text-[#9fb0d6] text-xs uppercase tracking-widest">Objetivo</div><div id="tgtVal" class="text-or font-extrabold text-3xl sm:text-4xl tabular-nums">—</div></div>
+  <div id="gauge" class="w-full relative" style="height:92px" aria-label="Barra de presión">
+    <div class="absolute inset-x-0 h-8 rounded-full" style="top:26px;background:linear-gradient(90deg,#1d6fe0,#12a150 45%,#f5c400 70%,#e5251c)"></div>
+    <div id="ticks"></div>
+    <div id="tgt" class="absolute rounded bg-[#0a1a3f] border-2 border-or" style="top:14px;width:10px;height:56px;left:50%;transform:translateX(-50%);box-shadow:0 0 12px #f25500;opacity:0"></div>
+    <div id="cur" class="absolute rounded bg-white" style="top:10px;width:8px;height:64px;left:0;transform:translateX(-50%);box-shadow:0 0 10px rgba(255,255,255,.8)"></div>
+  </div>
+  <div id="rounds" class="flex gap-2 sm:gap-3"></div>
+</div>
+    </div>
+    <button id="startBtn" type="button" class="btn self-center">Comenzar</button>
+  </div>
+  <aside id="side" class="flex flex-col gap-3 lg:min-h-0"></aside>
+ </div>
+</main>
+<script>
+(() => {
+const {$}=TF;
+const side=TF.side({logKey:'presion_v1',rankKey:'presion_ranking_v1',fmt:v=>(v/100).toFixed(2),unit:'psi',bad:'Error'});
+const msg=$('msg'),verdict=$('verdict'),hint=$('hint'),timeEl=$('time'),startBtn=$('startBtn'),stage=$('stage');
+const live=$('live'),tgtVal=$('tgtVal'),tgt=$('tgt'),cur=$('cur'),ticks=$('ticks'),roundsEl=$('rounds');
+const MIN=10,MAX=40,SWEEP=[1,.8,.65],N=3;               /* segundos por pasada: cada ronda es más rápida */
+const ST={IDLE:0,READY:1,RUN:2,SHOW:3,NAME:4,DONE:5};
+let state=ST.IDLE,round=0,target=0,prev=0,errs=[],t0=0,raf=0,timer=0;
+TF.busy=()=>state>=ST.READY&&state<=ST.SHOW;
+const pct=v=>((v-MIN)/(MAX-MIN)*100)+'%';
+for(let v=MIN;v<=MAX;v+=5){ticks.insertAdjacentHTML('beforeend',`<div class="absolute" style="left:${pct(v)};top:60px;transform:translateX(-50%)"><div style="width:2px;height:6px;background:#6f87b8;margin:0 auto"></div><div class="text-[#9fb0d6] text-[11px] font-semibold tabular-nums text-center">${v}</div></div>`)}
+const frac=t=>{const m=((t-t0)/(SWEEP[round]*1000))%2;return m<1?m:2-m};   /* ida y vuelta */
+const setCur=f=>{cur.style.left=(f*100)+'%';live.textContent=(MIN+f*(MAX-MIN)).toFixed(1)};
+const sum=()=>errs.reduce((a,b)=>a+b,0);
+const grade=e=>e<.3?'¡Perfecto!':e<1?'Muy cerca':e<3?'Cerca':'Lejos';
+const rate=t=>t<1?'¡Precisión de ingeniero de boxes!':t<2.5?'Excelente ajuste':t<5?'Muy buen pulso':t<10?'Buen intento':'A practicar el ajuste';
+function drawRounds(){
+  roundsEl.innerHTML=Array.from({length:N},(_,i)=>{
+    const done=i<errs.length,act=(state===ST.RUN||state===ST.READY)&&i===round;
+    const c=done?'bg-grn text-white':act?'bg-or text-white':'bg-[#16306b] text-[#6f87b8]';
+    return `<div class="rounded-xl px-3 py-1 text-center min-w-[74px] ${c}"><div class="text-[10px] uppercase tracking-wide">Ronda ${i+1}</div><div class="font-extrabold tabular-nums">${done?errs[i].toFixed(2):'—'}</div></div>`;
+  }).join('');
+}
+function startGame(){clearTimeout(timer);cancelAnimationFrame(raf);errs=[];round=0;prev=0;timeEl.innerHTML='0.00<small>psi</small>';startBtn.hidden=true;nextRound()}
+function nextRound(){
+  state=ST.READY;
+  do{target=Math.round((14+Math.random()*22)*10)/10}while(Math.abs(target-prev)<6);prev=target;
+  tgtVal.textContent=target.toFixed(1)+' PSI';tgt.style.left=pct(target);tgt.style.opacity=1;cur.style.background='#fff';
+  setCur(0);msg.textContent='Ronda '+(round+1)+' de '+N;verdict.textContent='';
+  hint.textContent='Tocá la pantalla (o Espacio) justo cuando la barra pase por el objetivo';drawRounds();
+  timer=setTimeout(go,900);
+}
+function go(){state=ST.RUN;drawRounds();t0=performance.now();(function tick(){if(state!==ST.RUN)return;setCur(frac(performance.now()));raf=requestAnimationFrame(tick)})()}
+function tap(){
+  if(state!==ST.RUN)return;
+  const f=frac(performance.now());cancelAnimationFrame(raf);setCur(f);
+  const err=Math.abs(MIN+f*(MAX-MIN)-target);errs.push(err);state=ST.SHOW;
+  cur.style.background=err<.5?'#12a150':err<2?'#f5c400':'#e5251c';
+  msg.textContent='Ronda '+(round+1)+' de '+N;verdict.textContent='Error: '+err.toFixed(2)+' PSI · '+grade(err);hint.textContent='';
+  timeEl.innerHTML=sum().toFixed(2)+'<small>psi</small>';drawRounds();
+  timer=setTimeout(()=>{round++;round<N?nextRound():finish()},1300);
+}
+function finish(){
+  state=ST.NAME;const total=sum(),cs=Math.round(total*100);
+  msg.textContent='Ajuste completo';verdict.textContent='Error total '+total.toFixed(2)+' PSI · '+rate(total);hint.textContent='';tgt.style.opacity=0;
+  side.log(cs);
+  setTimeout(()=>TF.askName(total.toFixed(2)+' psi',name=>{
+    if(name){const pos=side.rank(name,cs);verdict.textContent=pos<=10?name+' · puesto #'+pos+' del ranking':name+' · fuera del top 10'}
+    state=ST.DONE;hint.textContent='Cuanto menor el error total, mejor';startBtn.textContent='Jugar otra vez';startBtn.hidden=false;
+  }),700);
+}
+stage.addEventListener('pointerdown',e=>{if(TF.nameOpen||e.target.closest('button'))return;if(state===ST.RUN){e.preventDefault();tap()}});
+startBtn.addEventListener('click',()=>{if(state===ST.IDLE||state===ST.DONE)startGame()});
+document.addEventListener('keydown',e=>{
+  if(e.repeat||TF.nameOpen)return;
+  if(e.code==='Space'||e.code==='Enter'){e.preventDefault();if(state===ST.RUN)tap();else if(state===ST.IDLE||state===ST.DONE)startGame()}
+});
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden&&TF.busy()){clearTimeout(timer);cancelAnimationFrame(raf);state=ST.IDLE;errs=[];tgt.style.opacity=0;setCur(0);cur.style.background='#fff';timeEl.innerHTML='';msg.textContent='Prueba cancelada';tgtVal.textContent='—';drawRounds();startBtn.textContent='Comenzar';startBtn.hidden=false}
+});
+setCur(0);live.textContent='--';drawRounds();
+})();
+</script>
+</body>
+</html>
