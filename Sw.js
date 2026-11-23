@@ -1,4 +1,4 @@
-const CACHE_NAME = 'trodia-minijuegos-v4';
+const CACHE_NAME = 'trodia-minijuegos-v5';
 const CORE_ASSETS = [
   './', './index.html', './reaccion.html', './ruleta.html', './pitstop.html',
   './app.css', './shared.js', './Manifest.json',
@@ -23,20 +23,32 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
+// Archivos propios: primero la red (así las actualizaciones llegan siempre), caché solo sin conexión.
+// Recursos externos (Tailwind): primero caché.
 self.addEventListener('fetch', (event) => {
-  if (event.request.method !== 'GET') return;
+  const req = event.request;
+  if (req.method !== 'GET') return;
+  const sameOrigin = new URL(req.url).origin === self.location.origin;
   event.respondWith(
-    caches.match(event.request, { ignoreSearch: true }).then((cached) => {
-      const net = fetch(event.request)
-        .then((res) => {
-          if (res && (res.status === 200 || res.type === 'opaque')) {
-            const copy = res.clone();
-            caches.open(CACHE_NAME).then((c) => c.put(event.request, copy));
-          }
-          return res;
-        })
-        .catch(() => cached);
-      return cached || net;
-    })
+    sameOrigin
+      ? fetch(req)
+          .then((res) => {
+            if (res && res.status === 200) {
+              const copy = res.clone();
+              caches.open(CACHE_NAME).then((c) => c.put(req, copy));
+            }
+            return res;
+          })
+          .catch(() => caches.match(req, { ignoreSearch: true }))
+      : caches.match(req).then((cached) =>
+          cached ||
+          fetch(req).then((res) => {
+            if (res && (res.status === 200 || res.type === 'opaque')) {
+              const copy = res.clone();
+              caches.open(CACHE_NAME).then((c) => c.put(req, copy));
+            }
+            return res;
+          })
+        )
   );
 });
