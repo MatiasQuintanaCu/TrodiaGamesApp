@@ -26,6 +26,13 @@
       <p class="text-3xl sm:text-5xl font-extrabold leading-tight">¿A qué jugamos?</p>
       <p class="text-white/70 mt-2">Elegí un minijuego</p>
     </div>
+     <section class="card !rounded-3xl !p-4 sm:!p-6 mt-6 sm:mt-8" aria-label="Ranking global de mejores marcas">
+      <h2>Ranking global · Mejores marcas</h2>
+      <div id="rkTabs" class="flex flex-wrap gap-2 mb-3"></div>
+      <ol id="rkList" class="flex flex-col gap-1.5"></ol>
+      <p id="rkEmpty" class="text-mut text-sm" hidden>Todavía no hay resultados en este juego. ¡Sé el primero!</p>
+    </section>
+    <br>
     <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
       <a href="./reaccion.html" class="bg-white rounded-3xl p-4 sm:p-6 active:scale-[.98] transition hover:-translate-y-1 block"><div class="h-24 sm:h-32 mb-3 flex items-center justify-center"><img src="./img/Reaccion.png" alt="" class="w-full h-full object-contain object-center" draggable="false" onerror="TF.imgFix(this)"></div><h2 class="text-base sm:text-xl font-extrabold leading-tight">Test de <span class="text-or">reacción</span></h2><p class="text-mut text-xs sm:text-sm mt-1">Salí cuando se apaguen las luces.</p></a>
       <a href="./pitstop.html" class="bg-white rounded-3xl p-4 sm:p-6 active:scale-[.98] transition hover:-translate-y-1 block"><div class="h-24 sm:h-32 mb-3 flex items-center justify-center"><img src="./img/PITSTOP.png" alt="" class="w-full h-full object-contain object-center" draggable="false" onerror="TF.imgFix(this)"></div><h2 class="text-base sm:text-xl font-extrabold leading-tight">Pit <span class="text-or">stop</span></h2><p class="text-mut text-xs sm:text-sm mt-1">Sacá las 4 ruedas en el orden indicado.</p></a>
@@ -38,12 +45,7 @@
       <a href="./ruleta.html" class="bg-white rounded-3xl p-4 sm:p-6 active:scale-[.98] transition hover:-translate-y-1 block"><div class="h-24 sm:h-32 mb-3 flex items-center justify-center"><img src="./img/ruleta.png" alt="" class="w-full h-full object-contain object-center" draggable="false" onerror="TF.imgFix(this)"></div><h2 class="text-base sm:text-xl font-extrabold leading-tight">Ruleta <span class="text-or">de premios</span></h2><p class="text-mut text-xs sm:text-sm mt-1">Girá y descubrí qué premio te toca.</p></a>
       -->
     </div>
-    <section class="card !rounded-3xl !p-4 sm:!p-6 mt-6 sm:mt-8" aria-label="Ranking global de mejores marcas">
-      <h2>Ranking global · Mejores marcas</h2>
-      <div id="rkTabs" class="flex flex-wrap gap-2 mb-3"></div>
-      <ol id="rkList" class="flex flex-col gap-1.5"></ol>
-      <p id="rkEmpty" class="text-mut text-sm" hidden>Todavía no hay resultados en este juego. ¡Sé el primero!</p>
-    </section>
+   
   </div>
 </main>
 <script>
