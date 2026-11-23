@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#07337c">
+<link rel="manifest" href="./Manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="./img/logo.png">
+<link rel="apple-touch-icon" href="./img/logo.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="preload" href="./fonts/lexend-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="./app.css">
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script src="./shared.js"></script>
+<title>Frenada exacta | Trodia Fest</title>
+<meta name="apple-mobile-web-app-title" content="Frenada">
+<meta name="description" content="Frená lo más cerca posible de la línea.">
+<style>
+#stage{background:#0a1a3f;border-color:#16306b}
+.floor{background:radial-gradient(ellipse 70% 60% at 50% 55%,#1d3b80 0%,#0d2150 55%,#071230 100%)}
+
+</style>
+</head>
+<body class="font-sans bg-ink text-ink flex flex-col" data-title='Frenada <span class="text-or">exacta</span>' data-back="1">
+<header id="hdr"></header>
+<main class="flex-1 min-h-0 overflow-y-auto">
+ <div class="gm grid lg:grid-cols-[1.5fr_1fr] gap-3 p-3 sm:p-4 lg:h-full">
+  <div id="stage" class="border-[3px] rounded-3xl p-3 sm:p-4 flex flex-col gap-3 min-h-[max(500px,calc(100dvh-140px))] lg:min-h-0">
+    <div class="flex items-center justify-between gap-3">
+      <div class="min-w-0">
+        <div id="msg" class="font-bold uppercase tracking-wide text-white text-base sm:text-xl">Listo para frenar</div>
+        <div id="verdict" class="text-or font-semibold min-h-[1.3em] text-sm"></div>
+        <div id="hint" class="text-[#9fb0d6] text-sm">Tocá <b>Comenzar</b> y frená el monoplaza justo en la línea</div>
+      </div>
+      <div id="time" class="tm font-extrabold leading-none tabular-nums text-4xl sm:text-6xl text-white flex-none"></div>
+    </div>
+    <div id="floor" class="floor relative flex-1 min-h-[280px] rounded-2xl overflow-hidden flex items-center justify-center">
+<svg id="sc" viewBox="0 0 400 520" class="h-full w-full" role="img" aria-label="Pista de frenada vista desde arriba">
+<defs><pattern id="chk" width="16" height="16" patternUnits="userSpaceOnUse"><rect width="16" height="16" fill="#fff"/><rect width="8" height="8" fill="#000"/><rect x="8" y="8" width="8" height="8" fill="#000"/></pattern></defs>
+<rect x="100" width="200" height="520" fill="#1c2535"/><rect x="96" width="6" height="520" fill="#fff"/><rect x="298" width="6" height="520" fill="#fff"/>
+<line x1="200" y1="0" x2="200" y2="520" stroke="#fff" stroke-opacity=".3" stroke-width="3" stroke-dasharray="22 22"/>
+<g font-family="Lexend,system-ui,sans-serif" font-size="14" font-weight="700" fill="#9fb0d6">
+<rect x="100" y="378" width="200" height="4" fill="#fff" opacity=".45"/><text x="90" y="385" text-anchor="end">60 m</text>
+<rect x="100" y="311" width="200" height="4" fill="#fff" opacity=".45"/><text x="90" y="318" text-anchor="end">40 m</text>
+<rect x="100" y="245" width="200" height="4" fill="#fff" opacity=".45"/><text x="90" y="252" text-anchor="end">20 m</text>
+<text x="310" y="185" fill="#f25500" font-weight="800">LÍNEA</text></g>
+<rect x="100" y="172" width="200" height="16" fill="url(#chk)"/>
+<line id="stopL" x1="100" x2="300" y1="0" y2="0" stroke="#f25500" stroke-width="3" stroke-dasharray="8 6" visibility="hidden"/>
+<g id="car" transform="translate(200 480)">
+<path d="M-12 -20 L-26 -24 M12 -20 L26 -24 M-12 12 L-26 18 M12 12 L26 18" stroke="#12161c" stroke-width="3" fill="none"/>
+<rect x="-36" y="-34" width="10" height="18" rx="3" fill="#111"/><rect x="26" y="-34" width="10" height="18" rx="3" fill="#111"/>
+<rect x="-38" y="8" width="12" height="22" rx="3" fill="#111"/><rect x="26" y="8" width="12" height="22" rx="3" fill="#111"/>
+<rect x="-12" y="-36" width="24" height="62" rx="8" fill="#f7f9fc"/><rect x="-4" y="-36" width="8" height="40" fill="#f25500"/>
+<rect x="-30" y="-44" width="60" height="8" rx="2" fill="#222831"/><rect x="-28" y="24" width="56" height="8" rx="2" fill="#f25500"/>
+<circle cy="-2" r="6" fill="#151a22"/>
+<rect id="brk" x="-26" y="32" width="52" height="4" rx="2" fill="#ff3b30" opacity="0"/></g>
+</svg>
+    </div>
+    <button id="startBtn" type="button" class="btn self-center">Comenzar</button>
+  </div>
+  <aside id="side" class="flex flex-col gap-3 lg:min-h-0"></aside>
+ </div>
+</main>
+<script>
+(() => {
+const {$}=TF;
+const side=TF.side({logKey:'frenada_v1',rankKey:'frenada_ranking_v1',fmt:v=>(v/100).toFixed(2),unit:'m',bad:'Error'});
+const msg=$('msg'),verdict=$('verdict'),hint=$('hint'),timeEl=$('time'),startBtn=$('startBtn'),stage=$('stage'),car=$('car'),brk=$('brk'),stopL=$('stopL');
+const V0=28,A=14,D0=90,PPM=300/90,LINE=180,NOSE=44;
+const ST={IDLE:0,WAIT:1,RUN:2,BRAKE:3,NAME:4,DONE:5};
+let state=ST.IDLE,d=D0,v=V0,last=0,raf=0,timer=0;
+TF.busy=()=>state>=ST.WAIT&&state<=ST.BRAKE;
+const place=()=>car.setAttribute('transform',`translate(200 ${LINE+d*PPM+NOSE})`);
+const setSpeed=()=>{timeEl.innerHTML=Math.round(v*3.6)+'<small>km/h</small>'};
+const rate=m=>m<.3?'¡Frenada de precisión quirúrgica!':m<1?'Excelente frenada':m<3?'Muy buena frenada':m<8?'Buen intento':'A practicar la frenada';
+place();
+
+function start(){
+  clearTimeout(timer);cancelAnimationFrame(raf);
+  d=D0;v=V0;place();stopL.setAttribute('visibility','hidden');brk.setAttribute('opacity',0);
+  state=ST.WAIT;msg.textContent='Atento…';verdict.textContent='';timeEl.innerHTML='';startBtn.hidden=true;
+  hint.textContent='Tocá la pantalla (o Espacio) para frenar justo en la línea';
+  timer=setTimeout(go,900+Math.random()*900);
+}
+function go(){state=ST.RUN;msg.textContent='¡Frená en la línea!';setSpeed();last=performance.now();raf=requestAnimationFrame(tick)}
+function tick(ts){
+  const dt=Math.max(0,Math.min((ts-last)/1000,.05));last=ts;
+  if(state===ST.RUN){d-=v*dt;if(d<-22)return end(null)}
+  else if(state===ST.BRAKE){const t=Math.min(dt,v/A);d-=v*t-.5*A*t*t;v-=A*t;if(v<=1e-6)return end(d)}
+  place();setSpeed();raf=requestAnimationFrame(tick);
+}
+function brake(){
+  if(state!==ST.RUN)return;
+  const now=performance.now();d-=v*Math.max(0,Math.min((now-last)/1000,.05));last=now;
+  state=ST.BRAKE;brk.setAttribute('opacity',1);msg.textContent='Frenando…';
+}
+function after(label){startBtn.textContent=label;startBtn.hidden=false;state=ST.DONE}
+function end(r){
+  cancelAnimationFrame(raf);place();
+  if(r===null){
+    msg.textContent='¡No frenaste!';verdict.textContent='Pasaste de largo la línea';hint.textContent='Probá de nuevo y frená antes';
+    timeEl.innerHTML='';side.log(null);return after('Reintentar');
+  }
+  const cm=Math.round(Math.abs(r)*100),m=cm/100,y=LINE+r*PPM;
+  stopL.setAttribute('y1',y);stopL.setAttribute('y2',y);stopL.setAttribute('visibility','visible');
+  state=ST.NAME;msg.textContent='Frenada completa';
+  timeEl.innerHTML=m.toFixed(2)+'<small>m</small>';
+  verdict.textContent=(r>0?'Te faltaron ':'Te pasaste ')+m.toFixed(2)+' m · '+rate(m);hint.textContent='';
+  side.log(cm);
+  setTimeout(()=>TF.askName(m.toFixed(2)+' m',name=>{
+    if(name){const pos=side.rank(name,cm);verdict.textContent=pos<=10?name+' · puesto #'+pos+' del ranking':name+' · fuera del top 10'}
+    hint.textContent='Cuanto más cerca de 0, mejor';after('Jugar otra vez');
+  }),900);
+}
+stage.addEventListener('pointerdown',e=>{if(TF.nameOpen||e.target.closest('button'))return;if(state===ST.RUN){e.preventDefault();brake()}});
+startBtn.addEventListener('click',()=>{if(state===ST.IDLE||state===ST.DONE)start()});
+document.addEventListener('keydown',e=>{
+  if(e.repeat||TF.nameOpen)return;
+  if(e.code==='Space'||e.code==='Enter'){e.preventDefault();if(state===ST.RUN)brake();else if(state===ST.IDLE||state===ST.DONE)start()}
+});
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden&&TF.busy()){clearTimeout(timer);cancelAnimationFrame(raf);state=ST.IDLE;d=D0;v=V0;place();brk.setAttribute('opacity',0);msg.textContent='Prueba cancelada';timeEl.innerHTML='';startBtn.textContent='Comenzar';startBtn.hidden=false}
+});
+})();
+</script>
+</body>
+</html>

@@ -31,7 +31,7 @@
 .wheel.wrong .inner{animation:shake .3s}
 .wheel.expected .tire{stroke:#f25500;stroke-width:7}
 @keyframes shake{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
-.chip{width:clamp(44px,9vh,64px);height:clamp(44px,9vh,64px);border-radius:14px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:clamp(22px,4.6vh,34px);background:#fff;color:#07337c}
+.chip{width:clamp(38px,min(14vw,9vh),64px);height:clamp(38px,min(14vw,9vh),64px);border-radius:14px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:clamp(22px,4.6vh,34px);background:#fff;color:#07337c}
 .chip.cur{background:#f25500;color:#fff}.chip.done{background:#12a150;color:#fff}.chip.empty{background:#16306b;color:#6f87b8}
 </style>
 </head>
@@ -39,7 +39,7 @@
 <header id="hdr"></header>
 <main class="flex-1 min-h-0 overflow-y-auto">
  <div class="gm grid lg:grid-cols-[1.5fr_1fr] gap-3 p-3 sm:p-4 lg:h-full">
-  <div id="stage" class="border-[3px] rounded-3xl p-3 sm:p-4 flex flex-col gap-3 min-h-[560px] lg:min-h-0">
+  <div id="stage" class="border-[3px] rounded-3xl p-3 sm:p-4 flex flex-col gap-3 min-h-[max(500px,calc(100dvh-140px))] lg:min-h-0">
     <div class="flex items-center justify-between gap-3">
       <div class="min-w-0">
         <div id="msg" class="font-bold uppercase tracking-wide text-white text-base sm:text-xl">Listo para el pit stop</div>
@@ -76,7 +76,7 @@
       </svg>
       <div id="count" hidden class="absolute inset-0 flex items-center justify-center font-extrabold text-or bg-[rgba(7,18,48,.6)] pointer-events-none [&[hidden]]:hidden" style="font-size:clamp(80px,26vh,260px)">3</div>
     </div>
-    <div id="order" class="flex items-center justify-center gap-2 sm:gap-4" aria-live="polite"></div>
+    <div id="order" class="flex items-center justify-center gap-1.5 sm:gap-4" aria-live="polite"></div>
     <button id="startBtn" type="button" class="btn self-center">Comenzar</button>
   </div>
   <aside id="side" class="flex flex-col gap-3 lg:min-h-0"></aside>
@@ -113,9 +113,9 @@ function newOrder(){
   prev=o.join('');return o;
 }
 function renderOrder(){
-  let h='<span class="text-[#9fb0d6] text-xs font-bold uppercase tracking-widest mr-1">Orden</span>';
+  let h='<span class="text-[#9fb0d6] hidden sm:inline text-xs font-bold uppercase tracking-widest mr-1">Orden</span>';
   for(let i=0;i<4;i++){
-    if(i)h+='<span class="text-[#6f87b8] text-2xl font-bold">›</span>';
+    if(i)h+='<span class="text-[#6f87b8] text-xl sm:text-2xl font-bold">›</span>';
     const c=!order.length?'empty':i<step?'done':(i===step&&state===ST.RUN)?'cur':'';
     h+=`<span class="chip ${c}">${order.length?order[i]:'?'}</span>`;
   }

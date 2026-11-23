@@ -27,16 +27,16 @@ TF.blocked=name=>{
 };
 
 /* ---------- Panel lateral: estadísticas + ranking + historial ---------- */
-TF.side=({logKey,rankKey,fmt,unit,bad})=>{
+TF.side=({logKey,rankKey,fmt,unit,bad,higher})=>{
   $('side').innerHTML=`<div class="card"><h2>Estadísticas</h2><div id="stats" class="grid grid-cols-4 gap-2 text-center"></div></div>
   <div class="card flex-1 min-h-0 flex flex-col"><h2>Ranking · Top 10</h2><ol id="rankList" class="flex flex-col gap-1.5 overflow-auto"></ol><p id="rankEmpty" class="text-mut text-sm">Todavía no hay nombres en el ranking.</p></div>
   <div class="card"><h2>Historial</h2><ol id="history" class="flex flex-wrap gap-1.5 max-h-[76px] overflow-hidden"></ol><p id="emptyMsg" class="text-mut text-sm">Todavía no hiciste ningún intento.</p></div>`;
   let res=load(logKey,[]), rank=load(rankKey,[]); if(!Array.isArray(res))res=[]; if(!Array.isArray(rank))rank=[];
   const api={
     log(ms){res.push({ms});save(logKey,res.slice(-20));api.render()},
-    rank(name,ms){const e={name,ms,ts:Date.now()};rank.push(e);rank.sort((a,b)=>a.ms-b.ms||a.ts-b.ts);const pos=rank.indexOf(e)+1;rank=rank.slice(0,100);save(rankKey,rank);api.render();return pos},
+    rank(name,ms){const e={name,ms,ts:Date.now()};rank.push(e);rank.sort((a,b)=>(higher?b.ms-a.ms:a.ms-b.ms)||a.ts-b.ts);const pos=rank.indexOf(e)+1;rank=rank.slice(0,100);save(rankKey,rank);api.render();return pos},
     render(){
-      const ok=res.filter(r=>r.ms!=null).map(r=>r.ms), best=ok.length?Math.min(...ok):null;
+      const ok=res.filter(r=>r.ms!=null).map(r=>r.ms), best=ok.length?(higher?Math.max(...ok):Math.min(...ok)):null;
       const avg=ok.length?Math.round(ok.reduce((a,b)=>a+b,0)/ok.length):null, last=res[res.length-1];
       const S=[['Mejor ('+unit+')',best!=null?fmt(best):'—','text-or'],['Promedio ('+unit+')',avg!=null?fmt(avg):'—',''],['Último ('+unit+')',last?(last.ms==null?bad:fmt(last.ms)):'—',''],['Intentos',res.length,'']];
       $('stats').innerHTML=S.map(s=>`<div class="bg-bg2 rounded-2xl p-2"><b class="block text-xl sm:text-2xl font-extrabold tabular-nums ${s[2]}">${s[1]}</b><span class="block text-[9px] uppercase tracking-wide text-mut leading-tight">${s[0]}</span></div>`).join('');
@@ -55,13 +55,13 @@ TF.askName=(label,done)=>{
   if(!M){
     const m=document.createElement('div');
     m.hidden=true;m.setAttribute('role','dialog');m.setAttribute('aria-modal','true');
-    m.className='fixed inset-0 z-10 bg-[rgba(3,22,56,.72)] flex items-center justify-center p-3 [&[hidden]]:hidden';
-    m.innerHTML=`<div class="bg-white rounded-3xl w-full max-w-3xl max-h-full overflow-auto p-4 sm:p-6 flex flex-col gap-3"><div class="flex items-baseline justify-between gap-3 flex-wrap"><h3 class="font-bold text-lg" id="nmT"></h3><div id="nmL" class="text-3xl font-extrabold text-or tabular-nums"></div></div><div id="nmBox" class="flex items-center min-h-[56px] px-4 border-[3px] border-ink rounded-2xl text-3xl font-extrabold tracking-wider uppercase overflow-hidden whitespace-pre" aria-live="polite"></div><div id="nmErr" class="text-red font-semibold text-sm min-h-[1.4em]" aria-live="polite"></div><div id="nmKb" class="flex flex-col gap-2"></div></div>`;
+    m.className='fixed inset-0 z-10 bg-[rgba(3,22,56,.72)] flex items-center justify-center p-2 sm:p-3 [&[hidden]]:hidden';
+    m.innerHTML=`<div class="bg-white rounded-3xl w-full max-w-3xl max-h-full overflow-auto p-3 sm:p-6 flex flex-col gap-2 sm:gap-3"><div class="flex items-baseline justify-between gap-3 flex-wrap"><h3 class="font-bold text-lg" id="nmT"></h3><div id="nmL" class="text-3xl font-extrabold text-or tabular-nums"></div></div><div id="nmBox" class="flex items-center min-h-[56px] px-4 border-[3px] border-ink rounded-2xl text-3xl font-extrabold tracking-wider uppercase overflow-hidden whitespace-pre" aria-live="polite"></div><div id="nmErr" class="text-red font-semibold text-sm min-h-[1.4em]" aria-live="polite"></div><div id="nmKb" class="flex flex-col gap-1.5 sm:gap-2"></div></div>`;
     document.body.appendChild(m);
     const rows=[[...'1234567890'],[...'QWERTYUIOP'],[...'ASDFGHJKLÑ'],[...'ZXCVBNM','BACK'],['SKIP','SPACE','SAVE']];
     const L={BACK:['⌫','dk w'],SPACE:['Espacio','sp'],SAVE:['Guardar','sv w'],SKIP:['Omitir','sk w']};
     const kb=m.querySelector('#nmKb');
-    rows.forEach(r=>{const d=document.createElement('div');d.className='flex gap-2';r.forEach(k=>{const b=document.createElement('button');b.type='button';b.dataset.k=k;b.className='key '+(L[k]?L[k][1]:'');b.textContent=L[k]?L[k][0]:k;if(k==='BACK')b.setAttribute('aria-label','Borrar');d.appendChild(b)});kb.appendChild(d)});
+    rows.forEach(r=>{const d=document.createElement('div');d.className='flex gap-1 sm:gap-2';r.forEach(k=>{const b=document.createElement('button');b.type='button';b.dataset.k=k;b.className='key '+(L[k]?L[k][1]:'');b.textContent=L[k]?L[k][0]:k;if(k==='BACK')b.setAttribute('aria-label','Borrar');d.appendChild(b)});kb.appendChild(d)});
     M={m,kb,box:m.querySelector('#nmBox'),err:m.querySelector('#nmErr'),buf:'',cb:null};
     const upd=()=>{M.box.innerHTML='';if(!M.buf){const p=document.createElement('span');p.className='text-[#a9b5cc] font-semibold';p.textContent='TU NOMBRE';M.box.appendChild(p)}else M.box.appendChild(document.createTextNode(M.buf));const c=document.createElement('span');c.className='caret';M.box.appendChild(c);kb.querySelector('[data-k=SAVE]').classList.toggle('off',!M.buf.trim())};
     const clr=()=>{M.err.textContent='';M.box.style.borderColor=''};

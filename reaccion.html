@@ -18,9 +18,9 @@
 <meta name="apple-mobile-web-app-title" content="Reacción">
 <meta name="description" content="¿Qué tan rápido reaccionás? Probá tu tiempo de salida en el semáforo de Fórmula 1.">
 <style>
-.gantry{display:flex;gap:clamp(6px,1.6vh,14px);background:#000;border-radius:18px;padding:clamp(8px,1.8vh,16px)}
-.pod{display:flex;flex-direction:column;gap:clamp(6px,1.3vh,12px);background:#121212;padding:clamp(5px,1.1vh,10px);border-radius:12px}
-.lamp{display:block;width:clamp(30px,min(13vw,10.5vh),84px);aspect-ratio:1;border-radius:50%;background:#2b2b2b}
+.gantry{display:flex;gap:clamp(4px,1.4vw,14px);background:#000;border-radius:18px;padding:clamp(6px,1.6vw,16px);width:min(100%,520px,72vh)}
+.pod{flex:1;min-width:0;display:flex;flex-direction:column;gap:clamp(4px,1.2vw,12px);background:#121212;padding:clamp(4px,1vw,10px);border-radius:12px}
+.lamp{display:block;width:100%;aspect-ratio:1;border-radius:50%;background:#2b2b2b}
 .pod.on .lamp{background:#e5251c;box-shadow:0 0 14px 2px rgba(229,37,28,.9),0 0 40px 6px rgba(229,37,28,.45)}
 .st-go .lamp{background:#12a150;box-shadow:0 0 16px 3px rgba(40,230,120,.95),0 0 50px 10px rgba(40,230,120,.55)}
 .st-go .msg{color:#12a150;font-size:clamp(44px,14vw,110px)}
@@ -31,7 +31,7 @@
 <header id="hdr"></header>
 <main class="flex-1 min-h-0 overflow-y-auto">
  <div class="gm grid lg:grid-cols-[1.5fr_1fr] gap-3 p-3 sm:p-4 lg:h-full">
-  <div id="stage" role="button" tabindex="0" aria-label="Zona de prueba. Tocá o presioná espacio cuando se apaguen las luces." class="bg-white border-[3px] border-line rounded-3xl p-4 cursor-pointer outline-none flex flex-col items-center justify-evenly gap-3 min-h-[440px] lg:min-h-0" style="touch-action:manipulation">
+  <div id="stage" role="button" tabindex="0" aria-label="Zona de prueba. Tocá o presioná espacio cuando se apaguen las luces." class="bg-white border-[3px] border-line rounded-3xl p-4 cursor-pointer outline-none flex flex-col items-center justify-evenly gap-3 min-h-[max(500px,calc(100dvh-140px))] lg:min-h-0" style="touch-action:manipulation">
     <div class="gantry" id="gantry" aria-hidden="true"></div>
     <div class="text-center flex flex-col items-center gap-1" aria-live="polite">
       <div id="msg" class="msg font-bold uppercase tracking-wide text-lg sm:text-2xl">Listo para largar</div>
