@@ -110,7 +110,7 @@ TF.diagnose=async()=>{
     if(!r.ok)return 'No se encuentra Manifest.json (error '+r.status+'). Revisá el nombre y las mayúsculas.';
     let m;try{m=await r.json()}catch{return 'Manifest.json tiene un error de formato (JSON inválido).'}
     const ic=m.icons||[];
-    for(const need of ['192x192','512x512'])if(!ic.some(i=>i.sizes===need))return 'Al manifest le falta un ícono de '+need+'.';
+    if(!ic.some(i=>Math.min(...String(i.sizes||'0x0').split('x').map(Number))>=192))return 'Al manifest le falta un ícono de al menos 192×192.';
     for(const i of ic){
       const rr=await fetch(new URL(i.src,r.url),{cache:'no-store'});
       if(!rr.ok)return 'No se encuentra el ícono '+i.src+' (error '+rr.status+'). Subilo con ese nombre exacto.';
