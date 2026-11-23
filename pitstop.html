@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#07337c">
+<link rel="manifest" href="./Manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="preload" href="./fonts/lexend-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="./app.css">
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script src="./shared.js"></script>
+<title>Pit Stop | Cambio de ruedas</title>
+<meta name="apple-mobile-web-app-title" content="Pit Stop">
+<meta name="description" content="Sacá las ruedas del monoplaza Fórmula SAE en el orden indicado y registrá tu mejor tiempo.">
+<style>
+#stage{background:#0a1a3f;border-color:#16306b}
+.floor{background:radial-gradient(ellipse 70% 60% at 50% 55%,#1d3b80 0%,#0d2150 55%,#071230 100%)}
+.wheel{cursor:pointer}
+.wheel .inner{transition:transform .35s cubic-bezier(.2,.7,.3,1),opacity .35s;transform-box:fill-box;transform-origin:center}
+.wheel.left.front.gone .inner{transform:translate(-170px,40px) rotate(-25deg) scale(.8);opacity:0}
+.wheel.right.front.gone .inner{transform:translate(170px,40px) rotate(25deg) scale(.8);opacity:0}
+.wheel.left.rear.gone .inner{transform:translate(-130px,-40px) rotate(-18deg) scale(.8);opacity:0}
+.wheel.right.rear.gone .inner{transform:translate(130px,-40px) rotate(18deg) scale(.8);opacity:0}
+.wheel.gone{pointer-events:none}
+.wheel.wrong .tire{stroke:#e5251c;stroke-width:7}
+.wheel.wrong .inner{animation:shake .3s}
+.wheel.expected .tire{stroke:#f25500;stroke-width:7}
+@keyframes shake{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+.chip{width:clamp(44px,9vh,64px);height:clamp(44px,9vh,64px);border-radius:14px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:clamp(22px,4.6vh,34px);background:#fff;color:#07337c}
+.chip.cur{background:#f25500;color:#fff}.chip.done{background:#12a150;color:#fff}.chip.empty{background:#16306b;color:#6f87b8}
+</style>
+</head>
+<body class="font-sans bg-ink text-ink flex flex-col" data-title='Pit <span class="text-or">stop</span>' data-back="1">
+<header id="hdr"></header>
+<main class="flex-1 min-h-0 overflow-y-auto">
+ <div class="grid lg:grid-cols-[1.5fr_1fr] gap-3 p-3 sm:p-4 lg:h-full">
+  <div id="stage" class="border-[3px] rounded-3xl p-3 sm:p-4 flex flex-col gap-3 min-h-[560px] lg:min-h-0">
+    <div class="flex items-center justify-between gap-3">
+      <div class="min-w-0">
+        <div id="msg" class="font-bold uppercase tracking-wide text-white text-base sm:text-xl">Listo para el pit stop</div>
+        <div id="verdict" class="text-or font-semibold min-h-[1.3em] text-sm"></div>
+        <div id="hint" class="text-[#9fb0d6] text-sm">Tocá <b>Comenzar</b> y sacá las 4 ruedas en el orden indicado</div>
+      </div>
+      <div id="time" class="tm font-extrabold leading-none tabular-nums text-4xl sm:text-6xl text-white flex-none"></div>
+    </div>
+    <div class="floor relative flex-1 min-h-[260px] rounded-2xl overflow-hidden flex items-center justify-center">
+      <svg id="car" class="w-full h-full block" viewBox="0 0 800 450" role="img" aria-label="Monoplaza Fórmula SAE de frente con cuatro ruedas numeradas">
+        <ellipse cx="400" cy="424" rx="340" ry="20" fill="#000" opacity=".35"/>
+        <!-- alerón trasero -->
+        <g stroke-linejoin="round"><rect x="262" y="36" width="276" height="62" rx="6" fill="#f4f6fa" stroke="#cfd6e4" stroke-width="2"/><text x="400" y="78" text-anchor="middle" font-size="31" font-weight="800" fill="#f25500" font-family="Lexend,system-ui,sans-serif" letter-spacing="1">TRODIA</text><rect x="270" y="100" width="260" height="22" rx="5" fill="#e3e7ef" stroke="#cfd6e4" stroke-width="2"/><path d="M244 26 L268 30 L268 138 L248 130 Z" fill="#f25500"/><path d="M556 26 L532 30 L532 138 L552 130 Z" fill="#f25500"/><polygon points="248,92 268,92 268,108 246,104" fill="#fff"/><polygon points="246,106 268,110 268,124 248,120" fill="#2b2f38"/><polygon points="552,92 532,92 532,108 554,104" fill="#fff"/><polygon points="554,106 532,110 532,124 552,120" fill="#2b2f38"/></g>
+        <g stroke="#1a1f27" stroke-width="5" stroke-linecap="round"><line x1="360" y1="122" x2="372" y2="236"/><line x1="440" y1="122" x2="428" y2="236"/></g>
+        <!-- traseras: soportes ANTES de la rueda y terminando en el buje -->
+        <g stroke="#12161c" stroke-width="6" stroke-linecap="round" fill="none"><path d="M340 252 L212 284"/><path d="M340 284 L212 292"/><path d="M460 252 L588 284"/><path d="M460 284 L588 292"/></g>
+        <circle cx="212" cy="288" r="20" fill="#2a313d" stroke="#0b0e13" stroke-width="4"/><circle cx="212" cy="288" r="8" fill="#5b6577"/><circle cx="588" cy="288" r="20" fill="#2a313d" stroke="#0b0e13" stroke-width="4"/><circle cx="588" cy="288" r="8" fill="#5b6577"/>
+        <g id="wr"></g>
+        <!-- delanteras: soportes detrás de la carrocería (esconden el arranque) y terminando en el buje -->
+        <g stroke="#12161c" stroke-width="6" stroke-linecap="round" fill="none"><path d="M350 296 L116 318"/><path d="M350 350 L116 326"/><path d="M350 270 L116 322"/><path d="M450 296 L684 318"/><path d="M450 350 L684 326"/><path d="M450 270 L684 322"/></g>
+        <circle cx="116" cy="322" r="20" fill="#2a313d" stroke="#0b0e13" stroke-width="4"/><circle cx="116" cy="322" r="8" fill="#5b6577"/><circle cx="684" cy="322" r="20" fill="#2a313d" stroke="#0b0e13" stroke-width="4"/><circle cx="684" cy="322" r="8" fill="#5b6577"/>
+        <!-- carrocería -->
+        <path d="M338 332 C330 250 350 170 400 160 C450 170 470 250 462 332" fill="none" stroke="#11151b" stroke-width="12" stroke-linecap="round"/>
+        <path d="M318 252 C300 292 302 340 330 380 C352 410 448 410 470 380 C498 340 500 292 482 252 C450 238 350 238 318 252 Z" fill="#f7f9fc" stroke="#cfd6e4" stroke-width="3"/>
+        <path d="M322 262 C306 300 312 340 336 372 L346 366 C326 336 322 300 334 268 Z" fill="#f25500"/><path d="M478 262 C494 300 488 340 464 372 L454 366 C474 336 478 300 466 268 Z" fill="#f25500"/>
+        <polygon points="340,266 360,262 402,336 392,354" fill="#f25500"/><polygon points="460,266 440,262 398,336 408,354" fill="#f25500"/>
+        <g transform="translate(377 292)"><rect width="46" height="30" fill="#fff"/><rect y="3.33" width="46" height="3.33" fill="#2b6cc4"/><rect y="10" width="46" height="3.33" fill="#2b6cc4"/><rect y="16.67" width="46" height="3.33" fill="#2b6cc4"/><rect y="23.33" width="46" height="3.33" fill="#2b6cc4"/><rect width="19" height="16.67" fill="#fff"/><circle cx="9.5" cy="8.3" r="4" fill="#f5c400"/><rect width="46" height="30" fill="none" stroke="#cfd6e4"/></g>
+        <text x="400" y="380" text-anchor="middle" font-size="17" font-weight="800" fill="#f25500" font-family="Lexend,system-ui,sans-serif">TRODIA</text>
+        <ellipse cx="400" cy="256" rx="60" ry="19" fill="#0f141b"/><rect x="366" y="206" width="68" height="62" rx="16" fill="#151a22"/><rect x="380" y="184" width="40" height="30" rx="10" fill="#1d242e"/>
+        <g id="wf"></g>
+        <!-- alerón delantero -->
+        <path d="M74 396 L726 396 L716 424 L84 424 Z" fill="#222831"/><path d="M150 380 L650 380 L640 394 L160 394 Z" fill="#2b323d"/><g stroke="#343c49" stroke-width="3" stroke-linecap="round"><line x1="100" y1="404" x2="700" y2="404"/><line x1="104" y1="413" x2="696" y2="413"/></g>
+        <polygon points="40,352 116,372 120,438 58,424" fill="#f25500"/><polygon points="116,372 126,376 130,436 120,438" fill="#c94700"/><polygon points="760,352 684,372 680,438 742,424" fill="#f25500"/><polygon points="684,372 674,376 670,436 680,438" fill="#c94700"/>
+      </svg>
+      <div id="count" hidden class="absolute inset-0 flex items-center justify-center font-extrabold text-or bg-[rgba(7,18,48,.6)] pointer-events-none [&[hidden]]:hidden" style="font-size:clamp(80px,26vh,260px)">3</div>
+    </div>
+    <div id="order" class="flex items-center justify-center gap-2 sm:gap-4" aria-live="polite"></div>
+    <button id="startBtn" type="button" class="btn self-center">Comenzar</button>
+  </div>
+  <aside id="side" class="flex flex-col gap-3 lg:min-h-0"></aside>
+ </div>
+</main>
+<script>
+(() => {
+const {$}=TF;
+const side=TF.side({logKey:'pitstop_v1',rankKey:'pitstop_ranking_v1',fmt:ms=>(ms/1000).toFixed(2),unit:'s',bad:'Error'});
+const ST={IDLE:0,COUNT:1,RUN:2,DONE:3,FAIL:4,NAMING:5};
+const stage=$('stage'),msg=$('msg'),timeEl=$('time'),verdict=$('verdict'),hint=$('hint'),startBtn=$('startBtn'),car=$('car'),countEl=$('count'),orderEl=$('order');
+
+/* Ruedas: x, y, ancho, alto, posición del número */
+const wheel=(cls,n,x,y,w,h,nx,ny)=>{
+  const tread=[.12,.24,.36,.64,.76,.88].map(f=>{const yy=(y+h*f).toFixed(1);return `<line x1="${x+10}" y1="${yy}" x2="${x+w-10}" y2="${yy}"/>`}).join('');
+  return `<g class="wheel ${cls}" data-n="${n}"><g class="inner"><rect class="tire" x="${x}" y="${y}" width="${w}" height="${h}" rx="30" fill="#151a21" stroke="#0b0e13" stroke-width="3"/><rect x="${x+12}" y="${y+18}" width="9" height="${h-36}" rx="4" fill="#262e3a"/><g stroke="#232a35" stroke-width="3" stroke-linecap="round">${tread}</g><circle cx="${nx}" cy="${ny}" r="24" fill="#f25500" stroke="#fff" stroke-width="4"/><text x="${nx}" y="${ny+1}" text-anchor="middle" dominant-baseline="central" font-size="30" font-weight="800" fill="#fff" font-family="Lexend,system-ui,sans-serif">${n}</text></g></g>`;
+};
+$('wr').innerHTML=wheel('left rear',3,156,200,112,176,232,262)+wheel('right rear',4,532,200,112,176,568,262);
+$('wf').innerHTML=wheel('left front',1,50,219,132,206,116,322)+wheel('right front',2,618,219,132,206,684,322);
+const wheels=[...document.querySelectorAll('.wheel')];
+
+let state=ST.IDLE,timers=[],raf=0,t0=0,lastMs=0,order=[],step=0,prev='';
+const fmt=ms=>(ms/1000).toFixed(2);
+const setTime=ms=>{timeEl.innerHTML=fmt(ms)+'<small>s</small>'};
+const clearTimers=()=>{timers.forEach(clearTimeout);timers=[];cancelAnimationFrame(raf)};
+const rate=ms=>ms<2500?'¡Equipo de boxes de F1!':ms<3500?'Increíble, nivel élite':ms<5000?'Muy buen pit stop':ms<7000?'Buen ritmo':'A practicar el cambio de ruedas';
+const resetWheels=()=>wheels.forEach(w=>w.classList.remove('gone','wrong','expected'));
+TF.busy=()=>state===ST.COUNT||state===ST.RUN;
+setTime(0);
+
+function newOrder(){
+  let o;
+  do{o=[1,2,3,4];for(let i=3;i>0;i--){const j=Math.floor(Math.random()*(i+1));[o[i],o[j]]=[o[j],o[i]]}}while(o.join('')===prev);
+  prev=o.join('');return o;
+}
+function renderOrder(){
+  let h='<span class="text-[#9fb0d6] text-xs font-bold uppercase tracking-widest mr-1">Orden</span>';
+  for(let i=0;i<4;i++){
+    if(i)h+='<span class="text-[#6f87b8] text-2xl font-bold">›</span>';
+    const c=!order.length?'empty':i<step?'done':(i===step&&state===ST.RUN)?'cur':'';
+    h+=`<span class="chip ${c}">${order.length?order[i]:'?'}</span>`;
+  }
+  orderEl.innerHTML=h;
+}
+function start(){
+  clearTimers();resetWheels();order=newOrder();step=0;state=ST.COUNT;renderOrder();
+  msg.textContent='Memorizá el orden';verdict.textContent='';hint.textContent='Tocá las ruedas en ese orden apenas arranque el tiempo';
+  setTime(0);startBtn.hidden=true;countEl.hidden=false;countEl.textContent=3;
+  for(let i=1;i<3;i++)timers.push(setTimeout(()=>{countEl.textContent=3-i},i*1000));
+  timers.push(setTimeout(go,3000));
+}
+function go(){
+  countEl.hidden=true;state=ST.RUN;msg.textContent='¡Ya! Sacá las ruedas en orden';hint.textContent='';renderOrder();
+  t0=performance.now();(function tick(){if(state!==ST.RUN)return;setTime(performance.now()-t0);raf=requestAnimationFrame(tick)})();
+}
+function tapWheel(n,el){
+  if(state!==ST.RUN)return;
+  const now=performance.now();
+  if(n===order[step]){
+    el.classList.add('gone');step++;renderOrder();
+    if(step===4)finish(now-t0);
+  }else fail(n,el,now-t0);
+}
+function finish(ms){
+  cancelAnimationFrame(raf);lastMs=Math.round(ms);state=ST.NAMING;setTime(lastMs);
+  msg.textContent='¡Pit stop completo!';verdict.textContent=rate(lastMs);hint.textContent='';side.log(lastMs);
+  timers.push(setTimeout(()=>TF.askName(fmt(lastMs)+' s',name=>{
+    if(name){const pos=side.rank(name,lastMs);verdict.textContent=pos<=10?name+' · puesto #'+pos+' del ranking':name+' · fuera del top 10'}
+    state=ST.DONE;hint.textContent='Tocá Jugar otra vez para un nuevo orden';startBtn.textContent='Jugar otra vez';startBtn.hidden=false;
+  }),900));
+}
+function fail(n,el,ms){
+  cancelAnimationFrame(raf);state=ST.FAIL;setTime(ms);el.classList.add('wrong');
+  const exp=wheels.find(w=>+w.dataset.n===order[step]);if(exp)exp.classList.add('expected');
+  msg.textContent='¡Orden incorrecto!';verdict.textContent='Tocaste la rueda '+n+' y tocaba la '+order[step];
+  hint.textContent='Probá de nuevo con un orden nuevo';startBtn.textContent='Reintentar';startBtn.hidden=false;side.log(null);
+}
+car.addEventListener('pointerdown',e=>{const w=e.target.closest('.wheel');if(!w)return;e.preventDefault();tapWheel(+w.dataset.n,w)});
+startBtn.addEventListener('pointerdown',e=>{e.preventDefault();if(state===ST.IDLE||state===ST.DONE||state===ST.FAIL)start()});
+startBtn.addEventListener('click',e=>e.preventDefault());
+document.addEventListener('keydown',e=>{
+  if(e.repeat||TF.nameOpen)return;
+  if((e.code==='Space'||e.code==='Enter')&&(state===ST.IDLE||state===ST.DONE||state===ST.FAIL)){e.preventDefault();start()}
+});
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden&&TF.busy()){
+    clearTimers();resetWheels();countEl.hidden=true;order=[];step=0;state=ST.IDLE;renderOrder();
+    msg.textContent='Prueba cancelada';verdict.textContent='';hint.textContent='Tocá Comenzar para empezar de nuevo';setTime(0);startBtn.textContent='Comenzar';startBtn.hidden=false;
+  }
+});
+renderOrder();
+})();
+</script>
+</body>
+</html>

@@ -1,25 +1,16 @@
 {
-  "name": "Ruleta Trodia Racing",
-  "short_name": "Ruleta",
-  "description": "Ruleta de premios de Trodia Racing",
-  "start_url": "./Index.html",
+  "id": "./index.html",
+  "name": "Trodia Fest · Minijuegos",
+  "short_name": "Trodia Fest",
+  "description": "Test de reacción y ruleta de premios de Trodia Fest",
+  "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
-  "orientation": "portrait",
-  "background_color": "#ECECED",
-  "theme_color": "#12235A",
+  "orientation": "any",
+  "background_color": "#07337c",
+  "theme_color": "#07337c",
   "icons": [
-    {
-      "src": "./Img/logo.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "./Img/logo.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    }
+    { "src": "./icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
   ]
 }

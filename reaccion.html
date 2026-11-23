@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#07337c">
+<link rel="manifest" href="./Manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="preload" href="./fonts/lexend-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="./app.css">
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script src="./shared.js"></script>
+<title>Test de Reacción | Trodia Fest</title>
+<meta name="apple-mobile-web-app-title" content="Reacción">
+<meta name="description" content="¿Qué tan rápido reaccionás? Probá tu tiempo de salida en el semáforo de Fórmula 1.">
+<style>
+.gantry{display:flex;gap:clamp(6px,1.6vh,14px);background:#000;border-radius:18px;padding:clamp(8px,1.8vh,16px)}
+.pod{display:flex;flex-direction:column;gap:clamp(6px,1.3vh,12px);background:#121212;padding:clamp(5px,1.1vh,10px);border-radius:12px}
+.lamp{display:block;width:clamp(30px,min(13vw,10.5vh),84px);aspect-ratio:1;border-radius:50%;background:#2b2b2b}
+.pod.on .lamp{background:#e5251c;box-shadow:0 0 14px 2px rgba(229,37,28,.9),0 0 40px 6px rgba(229,37,28,.45)}
+.st-go .lamp{background:#12a150;box-shadow:0 0 16px 3px rgba(40,230,120,.95),0 0 50px 10px rgba(40,230,120,.55)}
+.st-go .msg{color:#12a150;font-size:clamp(44px,14vw,110px)}
+.st-foul{border-color:#e5251c!important}.st-foul .msg,.st-foul .tm{color:#e5251c}
+</style>
+</head>
+<body class="font-sans bg-ink text-ink flex flex-col" data-title='Test de <span class="text-or">reacción</span>' data-back="1">
+<header id="hdr"></header>
+<main class="flex-1 min-h-0 overflow-y-auto">
+ <div class="grid lg:grid-cols-[1.5fr_1fr] gap-3 p-3 sm:p-4 lg:h-full">
+  <div id="stage" role="button" tabindex="0" aria-label="Zona de prueba. Tocá o presioná espacio cuando se apaguen las luces." class="bg-white border-[3px] border-line rounded-3xl p-4 cursor-pointer outline-none flex flex-col items-center justify-evenly gap-3 min-h-[440px] lg:min-h-0" style="touch-action:manipulation">
+    <div class="gantry" id="gantry" aria-hidden="true"></div>
+    <div class="text-center flex flex-col items-center gap-1" aria-live="polite">
+      <div id="msg" class="msg font-bold uppercase tracking-wide text-lg sm:text-2xl">Listo para largar</div>
+      <div id="time" class="tm font-extrabold leading-none tabular-nums text-6xl sm:text-8xl" hidden></div>
+      <div id="verdict" class="text-or font-semibold min-h-[1.3em]"></div>
+      <div id="hint" class="text-mut text-sm">Tocá la pantalla o presioná <b>Espacio</b> para empezar</div>
+    </div>
+    <button id="startBtn" type="button" class="btn">Comenzar</button>
+  </div>
+  <aside id="side" class="flex flex-col gap-3 lg:min-h-0"></aside>
+ </div>
+</main>
+<script>
+(() => {
+const {$}=TF;
+const side=TF.side({logKey:'reaction_test_v1',rankKey:'reaction_ranking_v1',fmt:v=>v,unit:'ms',bad:'Falsa'});
+const ST={IDLE:0,LIGHTS:1,HOLD:2,GO:3,DONE:4,FOUL:5,NAMING:6};
+const stage=$('stage'),msg=$('msg'),timeEl=$('time'),verdict=$('verdict'),hint=$('hint'),startBtn=$('startBtn');
+$('gantry').innerHTML='<div class="pod"><i class="lamp"></i><i class="lamp"></i></div>'.repeat(5);
+const pods=[...document.querySelectorAll('.pod')];
+let state=ST.IDLE,timers=[],tGo=0,lastMs=0;
+const clearTimers=()=>{timers.forEach(clearTimeout);timers=[]};
+const setLights=n=>pods.forEach((p,i)=>p.classList.toggle('on',i<n));
+const setState=s=>{state=s;stage.classList.toggle('st-go',s===ST.GO);stage.classList.toggle('st-foul',s===ST.FOUL)};
+const rate=ms=>ms<160?'¡Reflejos de piloto de F1!':ms<200?'Increíble, nivel élite':ms<250?'Excelente reacción':ms<300?'Muy buena, por encima del promedio':ms<400?'Reacción promedio':'Calentá los neumáticos y probá de nuevo';
+const idle=(m,h,b)=>{msg.textContent=m;hint.textContent=h;startBtn.textContent=b;startBtn.hidden=false};
+TF.busy=()=>state===ST.LIGHTS||state===ST.HOLD||state===ST.GO;
+
+function start(){
+  clearTimers();setLights(0);setState(ST.LIGHTS);
+  msg.textContent='Atento…';timeEl.hidden=true;verdict.textContent='';
+  hint.textContent='No te adelantes: esperá a que se apaguen todas';startBtn.hidden=true;
+  for(let i=1;i<=5;i++)timers.push(setTimeout(()=>setLights(i),i*800));
+  timers.push(setTimeout(()=>setState(ST.HOLD),4000));
+  timers.push(setTimeout(go,4000+400+Math.random()*2800));
+}
+function go(){setLights(0);setState(ST.GO);msg.textContent='¡YA!';hint.textContent='';tGo=performance.now()}
+function react(){
+  lastMs=Math.round(performance.now()-tGo);setState(ST.NAMING);
+  msg.textContent='Tu tiempo';timeEl.innerHTML=lastMs+'<small>ms</small>';timeEl.hidden=false;
+  verdict.textContent=rate(lastMs);hint.textContent='';side.log(lastMs);
+  timers.push(setTimeout(()=>TF.askName(lastMs+' ms',name=>{
+    if(name){const pos=side.rank(name,lastMs);verdict.textContent=pos<=10?name+' · puesto #'+pos+' del ranking':name+' · fuera del top 10'}
+    setState(ST.DONE);idle('Tu tiempo','Tocá la pantalla o presioná Espacio para reintentar','Reintentar');
+  }),700));
+}
+function foul(){
+  clearTimers();setLights(0);setState(ST.FOUL);
+  timeEl.textContent='FALSA';timeEl.hidden=false;verdict.textContent='Te adelantaste a las luces';
+  idle('¡Salida en falso!','Tocá la pantalla o presioná Espacio para reintentar','Reintentar');side.log(null);
+}
+function press(){
+  if(state===ST.IDLE||state===ST.DONE||state===ST.FOUL)start();
+  else if(state===ST.LIGHTS||state===ST.HOLD)foul();
+  else if(state===ST.GO)react();
+}
+stage.addEventListener('pointerdown',e=>{if(TF.nameOpen)return;e.preventDefault();press()});
+startBtn.addEventListener('click',e=>e.preventDefault());
+document.addEventListener('keydown',e=>{if(e.repeat||TF.nameOpen)return;if(e.code==='Space'||e.code==='Enter'){e.preventDefault();press()}});
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden&&TF.busy()){clearTimers();setLights(0);setState(ST.IDLE);idle('Prueba cancelada','Tocá la pantalla o presioná Espacio para empezar','Comenzar')}
+});
+})();
+</script>
+</body>
+</html>
