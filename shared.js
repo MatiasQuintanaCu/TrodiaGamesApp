@@ -26,10 +26,10 @@ TF.blocked=name=>{
   return false;
 };
 
-TF.toast=t=>{
+TF.toast=(t,ms=4500)=>{
   let e=$('toast');
   if(!e){e=document.createElement('div');e.id='toast';e.setAttribute('role','status');e.className='fixed left-1/2 -translate-x-1/2 bottom-6 max-w-[92vw] text-center bg-white text-ink border-[3px] border-or rounded-2xl font-semibold text-sm px-5 py-3 opacity-0 pointer-events-none transition-opacity z-50';document.body.appendChild(e)}
-  e.textContent=t;e.style.opacity=1;clearTimeout(e._t);e._t=setTimeout(()=>e.style.opacity=0,4500);
+  e.textContent=t;e.style.opacity=1;clearTimeout(e._t);e._t=setTimeout(()=>e.style.opacity=0,ms);
 };
 
 /* ---------- Panel lateral: estadísticas + ranking + historial ---------- */
@@ -103,6 +103,24 @@ addEventListener('beforeinstallprompt',e=>{e.preventDefault();TF.dp=e;const b=$(
 addEventListener('appinstalled',()=>{TF.dp=null;const b=$('installBtn');b&&(b.hidden=true);TF.toast('¡App instalada! Buscala en tu pantalla de inicio.')});
 TF.isStandalone=()=>matchMedia('(display-mode: standalone)').matches||matchMedia('(display-mode: fullscreen)').matches||navigator.standalone===true;
 
+/* ---------- Diagnóstico de instalación ---------- */
+TF.diagnose=async()=>{
+  try{
+    const r=await fetch('./Manifest.json',{cache:'no-store'});
+    if(!r.ok)return 'No se encuentra Manifest.json (error '+r.status+'). Revisá el nombre y las mayúsculas.';
+    let m;try{m=await r.json()}catch{return 'Manifest.json tiene un error de formato (JSON inválido).'}
+    const ic=m.icons||[];
+    for(const need of ['192x192','512x512'])if(!ic.some(i=>i.sizes===need))return 'Al manifest le falta un ícono de '+need+'.';
+    for(const i of ic){
+      const rr=await fetch(new URL(i.src,r.url),{cache:'no-store'});
+      if(!rr.ok)return 'No se encuentra el ícono '+i.src+' (error '+rr.status+'). Subilo con ese nombre exacto.';
+      if(!(rr.headers.get('content-type')||'').startsWith('image/'))return 'El archivo '+i.src+' no es una imagen válida.';
+    }
+    if(!('serviceWorker' in navigator)||!(await navigator.serviceWorker.getRegistration()))return 'El Service Worker no está activo. Revisá que Sw.js esté subido y recargá la página.';
+  }catch(e){}
+  return null;
+};
+
 /* ---------- Encabezado + PWA ---------- */
 document.addEventListener('DOMContentLoaded',()=>{
   const b=document.body,h=$('hdr');
@@ -120,11 +138,13 @@ document.addEventListener('DOMContentLoaded',()=>{
         p.prompt();
         try{const r=await p.userChoice;if(r.outcome==='accepted')ib.hidden=true}catch{}
       }else if(location.protocol!=='https:'&&location.hostname!=='localhost'){
-        TF.toast('Para instalar la app el sitio tiene que abrirse con HTTPS.');
-      }else if(ios){
-        TF.toast('En iPhone/iPad: tocá Compartir y elegí "Agregar a pantalla de inicio".');
+        TF.toast('Para instalar la app el sitio tiene que abrirse con HTTPS.',7000);
       }else{
-        TF.toast('Abrí el menú del navegador (⋮) y elegí "Instalar app" o "Agregar a pantalla de inicio".');
+        TF.toast('Revisando la instalación…',2000);
+        const p=await TF.diagnose();
+        if(p)TF.toast('No se puede instalar: '+p,9000);
+        else if(ios)TF.toast('Safari no permite instalar desde un botón. Tocá Compartir y elegí "Agregar a pantalla de inicio".',9000);
+        else TF.toast('Tu navegador no ofreció la instalación directa (puede que la app ya esté instalada, o que sea Firefox/Safari). Probá en Chrome o Edge.',9000);
       }
     });
   }
