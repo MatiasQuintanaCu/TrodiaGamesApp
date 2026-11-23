@@ -33,6 +33,7 @@
       <a href="./conos.html" class="bg-white rounded-3xl p-4 sm:p-6 active:scale-[.98] transition hover:-translate-y-1 block"><div class="h-24 sm:h-32 mb-3 flex items-center justify-center"><img src="./img/conos.png" alt="" class="w-full h-full object-contain object-center" draggable="false" onerror="TF.imgFix(this)"></div><h2 class="text-base sm:text-xl font-extrabold leading-tight">Esquivar <span class="text-or">conos</span></h2><p class="text-mut text-xs sm:text-sm mt-1">Esquivá los conos y sumá la mayor cantidad.</p></a>
       <a href="./armar.html" class="bg-white rounded-3xl p-4 sm:p-6 active:scale-[.98] transition hover:-translate-y-1 block"><div class="h-24 sm:h-32 mb-3 flex items-center justify-center"><img src="./img/armar.png" alt="" class="w-full h-full object-contain object-center" draggable="false" onerror="TF.imgFix(this)"></div><h2 class="text-base sm:text-xl font-extrabold leading-tight">Armá el <span class="text-or">monoplaza</span></h2><p class="text-mut text-xs sm:text-sm mt-1">Arrastrá las piezas contra reloj.</p></a>
       <a href="./presion.html" class="bg-white rounded-3xl p-4 sm:p-6 active:scale-[.98] transition hover:-translate-y-1 block"><div class="h-24 sm:h-32 mb-3 flex items-center justify-center"><img src="./img/presion.png" alt="" class="w-full h-full object-contain object-center" draggable="false" onerror="TF.imgFix(this)"></div><h2 class="text-base sm:text-xl font-extrabold leading-tight">Presión <span class="text-or">de neumáticos</span></h2><p class="text-mut text-xs sm:text-sm mt-1">Frená la barra justo en el valor objetivo.</p></a>
+      <a href="./memoria.html" class="bg-white rounded-3xl p-4 sm:p-6 active:scale-[.98] transition hover:-translate-y-1 block"><div class="h-24 sm:h-32 mb-3 flex items-center justify-center"><img src="./img/memoria.png" alt="" class="w-full h-full object-contain object-center" draggable="false" onerror="TF.imgFix(this)"></div><h2 class="text-base sm:text-xl font-extrabold leading-tight">Memoria <span class="text-or">de pista</span></h2><p class="text-mut text-xs sm:text-sm mt-1">Repetí de memoria el recorrido del monoplaza.</p></a>
       <!-- Ruleta desactivada por ahora: para volver a mostrarla, borrá los marcadores de comentario
       <a href="./ruleta.html" class="bg-white rounded-3xl p-4 sm:p-6 active:scale-[.98] transition hover:-translate-y-1 block"><div class="h-24 sm:h-32 mb-3 flex items-center justify-center"><img src="./img/ruleta.png" alt="" class="w-full h-full object-contain object-center" draggable="false" onerror="TF.imgFix(this)"></div><h2 class="text-base sm:text-xl font-extrabold leading-tight">Ruleta <span class="text-or">de premios</span></h2><p class="text-mut text-xs sm:text-sm mt-1">Girá y descubrí qué premio te toca.</p></a>
       -->
@@ -51,7 +52,8 @@ const TABS=[
   {key:'reaction_ranking_v1',name:'Reacción',fmt:v=>v,unit:'ms'},
   {key:'pitstop_ranking_v1',name:'Pit stop',fmt:v=>(v/1000).toFixed(2),unit:'s'},
   {key:'armar_ranking_v1',name:'Monoplaza',fmt:v=>(v/1000).toFixed(2),unit:'s'},
-  {key:'presion_ranking_v1',name:'Presión',fmt:v=>(v/100).toFixed(2),unit:'psi'}
+  {key:'presion_ranking_v1',name:'Presión',fmt:v=>(v/100).toFixed(2),unit:'psi'},
+  {key:'memoria_ranking_v1',name:'Memoria',fmt:v=>v,unit:'tramos',higher:true}
 ];
 let cur=0;
 const tabs=TF.$('rkTabs'),list=TF.$('rkList'),empty=TF.$('rkEmpty');
@@ -63,7 +65,7 @@ function render(){
     b.addEventListener('click',()=>{cur=i;render()});tabs.appendChild(b);
   });
   const t=TABS[cur];let rows=TF.load(t.key,[]);
-  rows=(Array.isArray(rows)?rows:[]).filter(r=>r&&typeof r.ms==='number').sort((a,b)=>a.ms-b.ms||a.ts-b.ts).slice(0,10);
+  rows=(Array.isArray(rows)?rows:[]).filter(r=>r&&typeof r.ms==='number').sort((a,b)=>(t.higher?b.ms-a.ms:a.ms-b.ms)||a.ts-b.ts).slice(0,10);
   list.innerHTML='';empty.hidden=rows.length>0;
   rows.forEach((r,n)=>{
     const li=document.createElement('li'),c=n===0?'text-or':'';

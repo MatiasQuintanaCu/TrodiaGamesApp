@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#07337c">
+<link rel="manifest" href="./Manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="./img/logo.png">
+<link rel="apple-touch-icon" href="./img/logo.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="preload" href="./fonts/lexend-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="./app.css">
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script src="./shared.js"></script>
+<title>Memoria de pista | Trodia Fest</title>
+<meta name="apple-mobile-web-app-title" content="Memoria">
+<meta name="description" content="Memorizá el recorrido del monoplaza y repetilo de memoria.">
+<style>
+#stage{background:#0a1a3f;border-color:#16306b}
+.floor{background:radial-gradient(ellipse 70% 60% at 50% 55%,#1d3b80 0%,#0d2150 55%,#071230 100%)}
+
+</style>
+</head>
+<body class="font-sans bg-ink text-ink flex flex-col" data-title='Memoria <span class="text-or">de pista</span>' data-back="1">
+<header id="hdr"></header>
+<main class="flex-1 min-h-0 overflow-y-auto">
+ <div class="gm grid lg:grid-cols-[1.5fr_1fr] gap-3 p-3 sm:p-4 lg:h-full">
+  <div id="stage" class="border-[3px] rounded-3xl p-3 sm:p-4 flex flex-col gap-3 min-h-[max(500px,calc(100dvh-140px))] lg:min-h-0">
+    <div class="flex items-center justify-between gap-3">
+      <div class="min-w-0">
+        <div id="msg" class="font-bold uppercase tracking-wide text-white text-base sm:text-xl">Listo para memorizar</div>
+        <div id="verdict" class="text-or font-semibold min-h-[1.3em] text-sm"></div>
+        <div id="hint" class="text-[#9fb0d6] text-sm">Tocá <b>Comenzar</b>, mirá el recorrido y repetilo de memoria</div>
+      </div>
+      <div id="time" class="tm font-extrabold leading-none tabular-nums text-4xl sm:text-6xl text-white flex-none"></div>
+    </div>
+    <div id="floor" class="floor relative flex-1 min-h-[280px] rounded-2xl overflow-hidden flex items-center justify-center">
+      <svg id="sc" viewBox="0 0 400 400" class="h-full w-full" role="img" aria-label="Recorrido del monoplaza">
+        <g id="trk" style="transition:opacity .4s">
+          <path id="road" fill="none" stroke="#2b3d66" stroke-linecap="round" stroke-linejoin="round"/>
+          <path id="road2" fill="none" stroke="#fff" stroke-opacity=".4" stroke-dasharray="8 8" stroke-linejoin="round"/>
+        </g>
+        <path id="trail" fill="none" stroke="#12a150" stroke-linecap="round" stroke-linejoin="round" stroke-opacity=".9"/>
+        <circle id="startM" r="8" fill="#12a150" stroke="#fff" stroke-width="2"/>
+        <text id="call" x="200" y="38" text-anchor="middle" font-size="24" font-weight="800" fill="#fff" font-family="Lexend,system-ui,sans-serif"></text>
+        <g id="car"><g id="carS">
+          <path d="M-12 -20 L-26 -24 M12 -20 L26 -24 M-12 12 L-26 18 M12 12 L26 18" stroke="#12161c" stroke-width="3" fill="none"/>
+          <rect x="-36" y="-34" width="10" height="18" rx="3" fill="#111"/><rect x="26" y="-34" width="10" height="18" rx="3" fill="#111"/>
+          <rect x="-38" y="8" width="12" height="22" rx="3" fill="#111"/><rect x="26" y="8" width="12" height="22" rx="3" fill="#111"/>
+          <rect x="-12" y="-36" width="24" height="62" rx="8" fill="#f7f9fc"/><rect x="-4" y="-36" width="8" height="40" fill="#f25500"/>
+          <rect x="-30" y="-44" width="60" height="8" rx="2" fill="#222831"/><rect x="-28" y="24" width="56" height="8" rx="2" fill="#f25500"/>
+          <circle cy="-2" r="6" fill="#151a22"/>
+        </g></g>
+      </svg>
+      <div id="dots" class="absolute bottom-2 inset-x-3 flex flex-wrap justify-center gap-1 pointer-events-none"></div>
+    </div>
+    <div id="ctrl" class="grid grid-cols-3 gap-2 w-full max-w-md self-center">
+      <button type="button" data-m="L" class="rounded-2xl bg-white text-ink font-extrabold text-2xl py-2 sm:py-3 leading-tight disabled:opacity-40 active:scale-95 transition" disabled>←<span class="block text-[10px] font-semibold uppercase tracking-wide">Izquierda</span></button>
+      <button type="button" data-m="S" class="rounded-2xl bg-white text-ink font-extrabold text-2xl py-2 sm:py-3 leading-tight disabled:opacity-40 active:scale-95 transition" disabled>↑<span class="block text-[10px] font-semibold uppercase tracking-wide">Recta</span></button>
+      <button type="button" data-m="R" class="rounded-2xl bg-white text-ink font-extrabold text-2xl py-2 sm:py-3 leading-tight disabled:opacity-40 active:scale-95 transition" disabled>→<span class="block text-[10px] font-semibold uppercase tracking-wide">Derecha</span></button>
+    </div>
+    <button id="startBtn" type="button" class="btn self-center">Comenzar</button>
+  </div>
+  <aside id="side" class="flex flex-col gap-3 lg:min-h-0"></aside>
+ </div>
+</main>
+<script>
+(() => {
+const {$}=TF;
+const side=TF.side({logKey:'memoria_v1',rankKey:'memoria_ranking_v1',fmt:v=>v,unit:'tramos',bad:'Error',higher:true});
+const msg=$('msg'),verdict=$('verdict'),hint=$('hint'),timeEl=$('time'),startBtn=$('startBtn'),ctrl=$('ctrl');
+const road=$('road'),road2=$('road2'),trail=$('trail'),startM=$('startM'),call=$('call'),car=$('car'),carS=$('carS'),trk=$('trk'),dots=$('dots');
+const DIRS=[[0,-1],[1,0],[0,1],[-1,0]],LBL={L:'← IZQUIERDA',R:'DERECHA →',S:'↑ RECTA'};
+const ST={IDLE:0,SHOW:1,INPUT:2,NAME:3,DONE:4};
+let state=ST.IDLE,seq=[],pts=[],angs=[],dirNow=0,idx=0,runId=0,sc={s:60,ox:200,oy:210};
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+TF.busy=()=>state===ST.SHOW||state===ST.INPUT;
+const rate=n=>n<4?'Calentando motores':n<8?'Buena memoria':n<13?'Memoria de piloto':'¡Memoria de campeón!';
+
+function build(){
+  pts=[{x:0,y:0}];angs=[0];let d=0,a=0,x=0,y=0;
+  seq.forEach(m=>{if(m==='L'){d=(d+3)%4;a-=90}else if(m==='R'){d=(d+1)%4;a+=90}x+=DIRS[d][0];y+=DIRS[d][1];pts.push({x,y});angs.push(a)});
+  dirNow=d;
+}
+function addMove(){
+  build();const seen=new Set(pts.map(p=>p.x+','+p.y)),last=pts[pts.length-1];
+  const opts=['L','R','S'].sort(()=>Math.random()-.5);
+  const free=opts.find(m=>{const nd=m==='L'?(dirNow+3)%4:m==='R'?(dirNow+1)%4:dirNow;return !seen.has((last.x+DIRS[nd][0])+','+(last.y+DIRS[nd][1]))});
+  seq.push(free||opts[0]);
+}
+function fit(){
+  const xs=pts.map(p=>p.x),ys=pts.map(p=>p.y),minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys);
+  const s=Math.min(300/Math.max(maxX-minX,1),290/Math.max(maxY-minY,1),70);
+  sc={s,ox:200-(minX+maxX)/2*s,oy:215-(minY+maxY)/2*s};
+}
+const P=i=>[sc.ox+pts[i].x*sc.s,sc.oy+pts[i].y*sc.s];
+const pathTo=n=>'M'+Array.from({length:n+1},(_,i)=>P(i).map(v=>v.toFixed(1)).join(' ')).join(' L');
+function drawRoad(){
+  build();fit();
+  const d=pathTo(pts.length-1),w=Math.max(12,Math.min(28,sc.s*.42));
+  road.setAttribute('d',d);road2.setAttribute('d',d);road.setAttribute('stroke-width',w);road2.setAttribute('stroke-width',Math.max(2,w*.1));
+  const [sx,sy]=P(0);startM.setAttribute('cx',sx);startM.setAttribute('cy',sy);startM.setAttribute('r',Math.max(5,w*.4));
+  carS.setAttribute('transform','scale('+Math.max(.22,Math.min(.55,sc.s/110))+')');
+}
+const place=(i,tr=true)=>{const [x,y]=P(i);car.style.transition=tr?'transform .35s ease':'none';car.style.transform=`translate(${x}px,${y}px) rotate(${angs[i]}deg)`};
+const setTrail=i=>trail.setAttribute('d',i>0?pathTo(i):'');
+const setCtrl=on=>ctrl.querySelectorAll('button').forEach(b=>b.disabled=!on);
+const drawDots=()=>{dots.innerHTML=seq.map((_,i)=>`<i class="block w-2.5 h-2.5 rounded-full ${i<idx?'bg-grn':'bg-[#16306b]'}"></i>`).join('')};
+function resetView(){road.setAttribute('stroke','#2b3d66');trk.style.opacity=1;trail.setAttribute('d','');call.textContent='';dots.innerHTML=''}
+const setStartPos=()=>{seq=[];build();fit();drawRoad();place(0,false)};
+
+async function round(){
+  const my=++runId;
+  addMove();drawRoad();idx=0;state=ST.SHOW;resetView();setCtrl(false);drawDots();
+  const n=seq.length;timeEl.innerHTML=n+'<small>tramos</small>';
+  msg.textContent='Memorizá el recorrido';verdict.textContent='';hint.textContent='Mirá el auto y fijate en cada giro';
+  place(0,false);await sleep(800);if(my!==runId)return;
+  const step=Math.max(360,640-n*14);
+  for(let i=1;i<=n;i++){call.textContent=LBL[seq[i-1]];place(i);await sleep(step);if(my!==runId)return}
+  await sleep(300);if(my!==runId)return;
+  call.textContent='';trk.style.opacity=0;place(0,false);
+  state=ST.INPUT;msg.textContent='¡Tu turno!';hint.textContent='Repetí el recorrido con los botones (o las flechas del teclado)';setCtrl(true);drawDots();
+}
+function press(m){
+  if(state!==ST.INPUT)return;
+  if(m===seq[idx]){
+    idx++;place(idx);setTrail(idx);drawDots();call.textContent=LBL[m];
+    if(idx===seq.length){
+      state=ST.SHOW;setCtrl(false);msg.textContent='¡Bien!';verdict.textContent='Recorrido de '+seq.length+' tramos completo';hint.textContent='';
+      const my=runId;setTimeout(()=>{if(my===runId&&state===ST.SHOW)round()},900);
+    }
+  }else fail();
+}
+function fail(){
+  state=ST.NAME;setCtrl(false);runId++;
+  const score=seq.length-1;
+  trk.style.opacity=1;road.setAttribute('stroke','#7a2a2a');call.textContent='Era: '+LBL[seq[idx]];
+  msg.textContent='¡Te saliste de la pista!';verdict.textContent='Recordaste '+score+' tramos · '+rate(score);hint.textContent='';
+  timeEl.innerHTML=score+'<small>tramos</small>';side.log(score);
+  const done=()=>{hint.textContent='Cuantos más tramos recuerdes, mejor';state=ST.DONE;startBtn.textContent='Jugar otra vez';startBtn.hidden=false};
+  if(!score)return done();
+  setTimeout(()=>TF.askName(score+' tramos',name=>{
+    if(name){const pos=side.rank(name,score);verdict.textContent=pos<=10?name+' · puesto #'+pos+' del ranking':name+' · fuera del top 10'}
+    done();
+  }),1100);
+}
+function startGame(){runId++;seq=[];startBtn.hidden=true;round()}
+ctrl.addEventListener('pointerdown',e=>{const b=e.target.closest('[data-m]');if(!b||b.disabled)return;e.preventDefault();press(b.dataset.m)});
+startBtn.addEventListener('click',()=>{if(state===ST.IDLE||state===ST.DONE)startGame()});
+document.addEventListener('keydown',e=>{
+  if(e.repeat||TF.nameOpen)return;
+  const m={ArrowLeft:'L',ArrowRight:'R',ArrowUp:'S'}[e.key];
+  if(m){e.preventDefault();press(m)}
+  else if((e.code==='Space'||e.code==='Enter')&&(state===ST.IDLE||state===ST.DONE)){e.preventDefault();startGame()}
+});
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden&&TF.busy()){runId++;state=ST.IDLE;setCtrl(false);resetView();setStartPos();timeEl.innerHTML='';msg.textContent='Partida cancelada';startBtn.textContent='Comenzar';startBtn.hidden=false}
+});
+setStartPos();
+})();
+</script>
+</body>
+</html>
