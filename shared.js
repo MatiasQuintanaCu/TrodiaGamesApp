@@ -115,7 +115,14 @@ TF.diagnose=async()=>{
       const rr=await fetch(new URL(i.src,r.url),{cache:'no-store'});
       if(!rr.ok)return 'No se encuentra el ícono '+i.src+' (error '+rr.status+'). Subilo con ese nombre exacto.';
       if(!(rr.headers.get('content-type')||'').startsWith('image/'))return 'El archivo '+i.src+' no es una imagen válida.';
+      const d=await new Promise(res=>{const im=new Image();im.onload=()=>res([im.naturalWidth,im.naturalHeight]);im.onerror=()=>res(null);im.src=new URL(i.src,r.url).href});
+      if(!d)return 'No se pudo leer la imagen '+i.src+'. Puede estar dañada.';
+      TF.icoInfo=d[0]+'×'+d[1];
+      if(d[0]!==d[1])return 'El logo ('+i.src+') mide '+d[0]+'×'+d[1]+' y no es cuadrado. Chrome exige un PNG cuadrado, idealmente 512×512.';
+      if(d[0]<192)return 'El logo ('+i.src+') mide '+d[0]+'×'+d[1]+' y es muy chico. Tiene que ser de al menos 192×192, idealmente 512×512.';
     }
+    const sr=await fetch(new URL(m.start_url||'./',r.url),{redirect:'manual',cache:'no-store'});
+    if(sr.type==='opaqueredirect'||sr.status>=300)return 'La página de inicio ('+(m.start_url||'./')+') redirige a otra URL. En vercel.json desactivá cleanUrls o poné start_url "./".';
     if(!('serviceWorker' in navigator)||!(await navigator.serviceWorker.getRegistration()))return 'El Service Worker no está activo. Revisá que Sw.js esté subido y recargá la página.';
   }catch(e){}
   return null;
@@ -144,7 +151,7 @@ document.addEventListener('DOMContentLoaded',()=>{
         const p=await TF.diagnose();
         if(p)TF.toast('No se puede instalar: '+p,9000);
         else if(ios)TF.toast('Safari no permite instalar desde un botón. Tocá Compartir y elegí "Agregar a pantalla de inicio".',9000);
-        else TF.toast('Tu navegador no ofreció la instalación directa (puede que la app ya esté instalada, o que sea Firefox/Safari). Probá en Chrome o Edge.',9000);
+        else TF.toast('Todo parece correcto'+(TF.icoInfo?' (logo '+TF.icoInfo+')':'')+', pero Chrome no ofreció instalar. Casi seguro la app ya está instalada en este celular (buscala en tu pantalla de inicio o en el cajón de apps). Si no, desinstalala, cerrá Chrome y volvé a entrar.',12000);
       }
     });
   }
