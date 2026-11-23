@@ -17,3 +17,17 @@ main{animation:in .22s ease-out}
 .pin{width:100%;min-width:0;border:2px solid #dfe5f0;border-radius:10px;outline:none;padding:8px 12px;font-weight:500;color:#07337c}.pin:focus{border-color:#f25500}
 .tm small{font-size:.34em;color:#5f7094;margin-left:6px;font-weight:600}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* ---------- Responsive ---------- */
+body{padding-left:env(safe-area-inset-left,0);padding-right:env(safe-area-inset-right,0)}
+@media (max-width:380px){.card{padding:10px}.btn{padding:11px 26px}}
+/* Celular horizontal (poca altura): juego a la izquierda, panel a la derecha, sin scroll de página */
+@media (orientation:landscape) and (max-height:520px){
+  .gm{grid-template-columns:1.5fr 1fr!important;height:100%!important;gap:8px!important;padding:8px!important}
+  .gm>*{min-height:0!important;overflow:auto}
+  .gm .tm{font-size:clamp(36px,13vh,80px)!important}
+  .gm .wa,.gm .floor{min-height:0!important}
+  .st-go .msg{font-size:clamp(36px,16vh,90px)!important}
+  .key{height:34px;font-size:15px}
+  #nmBox{min-height:42px!important;font-size:22px!important}
+}

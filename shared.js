@@ -26,12 +26,6 @@ TF.blocked=name=>{
   return false;
 };
 
-TF.toast=(t,ms=4500)=>{
-  let e=$('toast');
-  if(!e){e=document.createElement('div');e.id='toast';e.setAttribute('role','status');e.className='fixed left-1/2 -translate-x-1/2 bottom-6 max-w-[92vw] text-center bg-white text-ink border-[3px] border-or rounded-2xl font-semibold text-sm px-5 py-3 opacity-0 pointer-events-none transition-opacity z-50';document.body.appendChild(e)}
-  e.textContent=t;e.style.opacity=1;clearTimeout(e._t);e._t=setTimeout(()=>e.style.opacity=0,ms);
-};
-
 /* ---------- Panel lateral: estadísticas + ranking + historial ---------- */
 TF.side=({logKey,rankKey,fmt,unit,bad})=>{
   $('side').innerHTML=`<div class="card"><h2>Estadísticas</h2><div id="stats" class="grid grid-cols-4 gap-2 text-center"></div></div>
@@ -97,63 +91,12 @@ TF.askName=(label,done)=>{
   M.upd();M.m.hidden=false;TF.nameOpen=true;
 };
 
-/* ---------- Instalación PWA: capturar el evento lo antes posible ---------- */
-TF.dp=null;
-addEventListener('beforeinstallprompt',e=>{e.preventDefault();TF.dp=e;const b=$('installBtn');if(b&&!TF.isStandalone())b.hidden=false});
-addEventListener('appinstalled',()=>{TF.dp=null;const b=$('installBtn');b&&(b.hidden=true);TF.toast('¡App instalada! Buscala en tu pantalla de inicio.')});
-TF.isStandalone=()=>matchMedia('(display-mode: standalone)').matches||matchMedia('(display-mode: fullscreen)').matches||navigator.standalone===true;
-
-/* ---------- Diagnóstico de instalación ---------- */
-TF.diagnose=async()=>{
-  try{
-    const r=await fetch('./Manifest.json',{cache:'no-store'});
-    if(!r.ok)return 'No se encuentra Manifest.json (error '+r.status+'). Revisá el nombre y las mayúsculas.';
-    let m;try{m=await r.json()}catch{return 'Manifest.json tiene un error de formato (JSON inválido).'}
-    const ic=m.icons||[];
-    if(!ic.some(i=>Math.min(...String(i.sizes||'0x0').split('x').map(Number))>=192))return 'Al manifest le falta un ícono de al menos 192×192.';
-    for(const i of ic){
-      const rr=await fetch(new URL(i.src,r.url),{cache:'no-store'});
-      if(!rr.ok)return 'No se encuentra el ícono '+i.src+' (error '+rr.status+'). Subilo con ese nombre exacto.';
-      if(!(rr.headers.get('content-type')||'').startsWith('image/'))return 'El archivo '+i.src+' no es una imagen válida.';
-      const d=await new Promise(res=>{const im=new Image();im.onload=()=>res([im.naturalWidth,im.naturalHeight]);im.onerror=()=>res(null);im.src=new URL(i.src,r.url).href});
-      if(!d)return 'No se pudo leer la imagen '+i.src+'. Puede estar dañada.';
-      TF.icoInfo=d[0]+'×'+d[1];
-      if(d[0]!==d[1])return 'El logo ('+i.src+') mide '+d[0]+'×'+d[1]+' y no es cuadrado. Chrome exige un PNG cuadrado, idealmente 512×512.';
-      if(d[0]<192)return 'El logo ('+i.src+') mide '+d[0]+'×'+d[1]+' y es muy chico. Tiene que ser de al menos 192×192, idealmente 512×512.';
-    }
-    const sr=await fetch(new URL(m.start_url||'./',r.url),{redirect:'manual',cache:'no-store'});
-    if(sr.type==='opaqueredirect'||sr.status>=300)return 'La página de inicio ('+(m.start_url||'./')+') redirige a otra URL. En vercel.json desactivá cleanUrls o poné start_url "./".';
-    if(!('serviceWorker' in navigator)||!(await navigator.serviceWorker.getRegistration()))return 'El Service Worker no está activo. Revisá que Sw.js esté subido y recargá la página.';
-  }catch(e){}
-  return null;
-};
-
 /* ---------- Encabezado + PWA ---------- */
 document.addEventListener('DOMContentLoaded',()=>{
   const b=document.body,h=$('hdr');
   if(h){
-    h.className='flex-none bg-white border-b border-line flex items-center justify-between gap-3 px-4 py-2';
-    h.innerHTML=`<a href="./index.html"><img src="./img/trodia_fest.png" alt="Trodia Fest" class="h-9 sm:h-11 w-auto max-w-[40vw]" draggable="false"></a><div class="flex items-center gap-2 sm:gap-4 min-w-0">${b.dataset.back?'<a href="./index.html" class="border-2 border-ink rounded-full px-3 py-1 text-sm font-semibold hover:bg-ink hover:text-white">Menú</a>':''}<h1 class="font-extrabold uppercase text-base sm:text-2xl leading-none whitespace-nowrap">${b.dataset.title||''}</h1></div>`;
-  }
-  const ib=$('installBtn');
-  const ios=/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
-  if(ib){
-    if(TF.isStandalone())ib.hidden=true;
-    ib.addEventListener('click',async()=>{
-      if(TF.dp){
-        const p=TF.dp;TF.dp=null;
-        p.prompt();
-        try{const r=await p.userChoice;if(r.outcome==='accepted')ib.hidden=true}catch{}
-      }else if(location.protocol!=='https:'&&location.hostname!=='localhost'){
-        TF.toast('Para instalar la app el sitio tiene que abrirse con HTTPS.',7000);
-      }else{
-        TF.toast('Revisando la instalación…',2000);
-        const p=await TF.diagnose();
-        if(p)TF.toast('No se puede instalar: '+p,9000);
-        else if(ios)TF.toast('Safari no permite instalar desde un botón. Tocá Compartir y elegí "Agregar a pantalla de inicio".',9000);
-        else TF.toast('Todo parece correcto'+(TF.icoInfo?' (logo '+TF.icoInfo+')':'')+', pero Chrome no ofreció instalar. Casi seguro la app ya está instalada en este celular (buscala en tu pantalla de inicio o en el cajón de apps). Si no, desinstalala, cerrá Chrome y volvé a entrar.',12000);
-      }
-    });
+    h.className='flex-none bg-white border-b border-line flex items-center justify-between gap-2 px-3 sm:px-4 py-2';
+    h.innerHTML=`<a href="./index.html" class="flex-none"><img src="./img/trodia_fest.png" alt="Trodia Fest" class="h-8 sm:h-11 w-auto max-w-[34vw]" draggable="false"></a><div class="flex items-center gap-2 sm:gap-4 min-w-0">${b.dataset.back?'<a href="./index.html" class="flex-none border-2 border-ink rounded-full px-3 py-0.5 sm:py-1 text-xs sm:text-sm font-semibold hover:bg-ink hover:text-white">Menú</a>':''}<h1 class="font-extrabold uppercase text-sm sm:text-2xl leading-none truncate">${b.dataset.title||''}</h1></div>`;
   }
   if('serviceWorker' in navigator){
     const had=!!navigator.serviceWorker.controller;let pend=false;
