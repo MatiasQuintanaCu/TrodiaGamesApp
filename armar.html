@@ -50,23 +50,28 @@ const {$}=TF;
 const side=TF.side({logKey:'armar_v1',rankKey:'armar_ranking_v1',fmt:ms=>(ms/1000).toFixed(2),unit:'s',bad:'Error'});
 const msg=$('msg'),verdict=$('verdict'),hint=$('hint'),timeEl=$('time'),startBtn=$('startBtn'),svg=$('sc');
 const HINT='Arrastrá cada pieza a su lugar. Cada error suma 0.5 s';
-const Wh=(w,h)=>`<rect x="${-w/2}" y="${-h/2}" width="${w}" height="${h}" rx="18" fill="#151a21" stroke="#0b0e13" stroke-width="3"/><rect x="${-w/2+9}" y="${-h/2+12}" width="7" height="${h-24}" rx="3" fill="#262e3a"/><g stroke="#232a35" stroke-width="3" stroke-linecap="round">${[.25,.5,.75].map(f=>`<line x1="${-w/2+22}" y1="${-h/2+h*f}" x2="${w/2-8}" y2="${-h/2+h*f}"/>`).join('')}</g>`;
+/* Cada rueda tiene su propio color */
+const WC={fl:['#22d3ee','DI'],fr:['#facc15','DD'],rl:['#4ade80','TI'],rr:['#e879f9','TD']};
+const Wh=(w,h,k)=>{const [c]=WC[k],r=Math.round(w*.3);return `<rect x="${-w/2}" y="${-h/2}" width="${w}" height="${h}" rx="18" fill="#151a21" stroke="${c}" stroke-width="4"/><rect x="${-w/2+9}" y="${-h/2+12}" width="7" height="${h-24}" rx="3" fill="${c}"/><rect x="${w/2-16}" y="${-h/2+12}" width="7" height="${h-24}" rx="3" fill="${c}"/><g stroke="#232a35" stroke-width="3" stroke-linecap="round">${[.25,.75].map(f=>`<line x1="${-w/2+22}" y1="${-h/2+h*f}" x2="${w/2-22}" y2="${-h/2+h*f}"/>`).join('')}</g><circle r="${r}" fill="${c}" stroke="#0b0e13" stroke-width="3"/>`};
 const DEF={
-  rl:{z:0,slot:[230,222],w:70,h:110,s:Wh(70,110)},
-  rr:{z:0,slot:[570,222],w:70,h:110,s:Wh(70,110)},
-  fl:{z:0,slot:[130,352],w:84,h:128,s:Wh(84,128)},
-  fr:{z:0,slot:[670,352],w:84,h:128,s:Wh(84,128)},
+  rl:{z:0,slot:[230,222],w:70,h:110,s:Wh(70,110,'rl')},
+  rr:{z:0,slot:[570,222],w:70,h:110,s:Wh(70,110,'rr')},
+  fl:{z:0,slot:[130,352],w:84,h:128,s:Wh(84,128,'fl')},
+  fr:{z:0,slot:[670,352],w:84,h:128,s:Wh(84,128,'fr')},
   bd:{z:1,slot:[400,265],w:170,h:230,s:`<path d="M-60 -105 C-84 -40 -78 40 -50 100 C-28 126 28 126 50 100 C78 40 84 -40 60 -105 C30 -118 -30 -118 -60 -105Z" fill="#f7f9fc" stroke="#cfd6e4" stroke-width="3"/><path d="M-54 -84 C-70 -30 -64 40 -42 90 L-31 84 C-50 38 -54 -30 -44 -80Z" fill="#f25500"/><path d="M54 -84 C70 -30 64 40 42 90 L31 84 C50 38 54 -30 44 -80Z" fill="#f25500"/><rect x="-23" y="30" width="46" height="30" fill="#fff"/><rect x="-23" y="36" width="46" height="4" fill="#2b6cc4"/><rect x="-23" y="46" width="46" height="4" fill="#2b6cc4"/>`},
   rw:{z:2,slot:[400,70],w:290,h:70,s:`<rect x="-135" y="-28" width="270" height="52" rx="6" fill="#f4f6fa" stroke="#cfd6e4" stroke-width="3"/><text y="10" text-anchor="middle" font-size="30" font-weight="800" fill="#f25500" font-family="Lexend,system-ui,sans-serif" letter-spacing="1">TRODIA</text><path d="M-146 -34 L-136 -30 L-136 28 L-142 26Z" fill="#f25500"/><path d="M146 -34 L136 -30 L136 28 L142 26Z" fill="#f25500"/>`},
   fw:{z:2,slot:[400,435],w:410,h:64,s:`<path d="M-190 -16 L190 -16 L178 24 L-178 24Z" fill="#222831"/><path d="M-150 -26 L150 -26 L142 -14 L-142 -14Z" fill="#2b323d"/><rect x="-204" y="-32" width="18" height="64" rx="4" fill="#f25500"/><rect x="186" y="-32" width="18" height="64" rx="4" fill="#f25500"/>`},
   hm:{z:3,slot:[400,236],w:60,h:70,s:`<rect x="-30" y="-8" width="60" height="42" rx="16" fill="#151a22"/><rect x="-20" y="-34" width="40" height="30" rx="10" fill="#1d242e"/>`}
 };
 const KEYS=Object.keys(DEF),PAD=28;
+/* Marca de color + letra en cada lugar de rueda (la tapa la pieza cuando se coloca) */
+const slotTag=k=>{const [c]=WC[k],[x,y]=DEF[k].slot;return `<g transform="translate(${x} ${y})" opacity=".85"><circle r="24" fill="${c}" fill-opacity=".25" stroke="${c}" stroke-width="4" stroke-dasharray="6 5"/></g>`};
 svg.innerHTML=`<defs>${KEYS.map(k=>`<g id="s-${k}">${DEF[k].s}</g>`).join('')}</defs>
 <ellipse cx="400" cy="452" rx="330" ry="18" fill="#000" opacity=".3"/>
 <g stroke="#12161c" stroke-width="6" stroke-linecap="round" fill="none"><path d="M360 96 L372 170"/><path d="M440 96 L428 170"/><path d="M330 210 L230 222"/><path d="M470 210 L570 222"/><path d="M330 300 L130 352"/><path d="M470 300 L670 352"/></g>
 <rect id="panel" y="474" width="800" height="126" fill="#071230"/>
 ${KEYS.map(k=>`<use href="#s-${k}" transform="translate(${DEF[k].slot[0]} ${DEF[k].slot[1]})" style="filter:brightness(0) invert(1);opacity:.18"/>`).join('')}
+${Object.keys(WC).map(slotTag).join('')}
 <g id="pcs">${KEYS.map(k=>`<g class="pc" data-k="${k}"><rect x="${-DEF[k].w/2-PAD}" y="${-DEF[k].h/2-PAD}" width="${DEF[k].w+2*PAD}" height="${DEF[k].h+2*PAD}" fill="transparent"/><use href="#s-${k}"/></g>`).join('')}</g>`;
 const pcs=svg.querySelector('#pcs'),panel=svg.querySelector('#panel');
 KEYS.forEach(k=>{DEF[k].g=pcs.querySelector(`[data-k="${k}"]`)});

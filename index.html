@@ -31,14 +31,14 @@
       <p id="rkEmpty" class="text-mut text-sm" hidden>Todavía no hay resultados en este juego. ¡Sé el primero!</p>
     </section>
 
-    <!-- Carrusel: los 3 juegos más jugados -->
+    <!-- Carrusel: los 3 juegos más jugados, de a uno -->
     <section class="mt-6 sm:mt-8" aria-label="Juegos más jugados">
       <div class="flex items-end justify-between gap-3 text-white">
         <h2 class="font-extrabold text-lg sm:text-2xl">Más jugados</h2>
         <span id="totalPlays" class="text-white/70 text-sm whitespace-nowrap"></span>
       </div>
-      <div id="car" class="relative flex gap-3 overflow-x-auto snap-x snap-mandatory nosb mt-3"></div>
-      <div id="dots" class="flex justify-center gap-1.5 mt-3 sm:hidden"></div>
+      <div id="car" class="relative flex overflow-x-auto snap-x snap-mandatory nosb mt-3"></div>
+      <div id="dots" class="flex justify-center gap-1.5 mt-3"></div>
     </section>
 
     <!-- Todos los juegos -->
@@ -97,28 +97,32 @@ function renderRank(){
   });
 }
 
-/* ---------- Carrusel de los 3 más jugados ---------- */
+/* ---------- Carrusel de los 3 más jugados (1 a la vez) ---------- */
 const car=$('car'),dots=$('dots');
 let idx=0,pausedUntil=0;
 const plural=n=>n+(n===1?' partida':' partidas');
+const setDots=()=>[...dots.children].forEach((d,k)=>{d.className='block w-2.5 h-2.5 rounded-full transition '+(k===idx?'bg-or':'bg-white/40')});
 function renderCarousel(){
   const raw=TF.load('plays_v1',{}),plays=raw&&typeof raw==='object'?raw:{};
   const n=g=>Number(plays[g.id])||0;
   const top=GAMES.map((g,i)=>({g,i,n:n(g)})).sort((a,b)=>b.n-a.n||a.i-b.i).slice(0,3);
-  car.innerHTML=top.map((x,k)=>card(x.g,`<span class="absolute top-3 left-3 z-10 bg-or text-white text-xs font-bold rounded-full px-3 py-1 shadow">#${k+1} · ${plural(x.n)}</span>`,'snap-center flex-none w-[78%] sm:w-[calc((100%-1.5rem)/3)]')).join('');
+  car.innerHTML=top.map((x,k)=>card(x.g,`<span class="absolute top-3 left-3 z-10 bg-or text-white text-xs font-bold rounded-full px-3 py-1 shadow">#${k+1} · ${plural(x.n)}</span>`,'snap-center flex-none w-full')).join('');
   const total=GAMES.reduce((a,g)=>a+n(g),0);
   $('totalPlays').textContent=plural(total)+' en total';
-  dots.innerHTML=top.map((_,k)=>`<i class="block w-2 h-2 rounded-full ${k===idx?'bg-or':'bg-white/40'}"></i>`).join('');
+  dots.innerHTML=top.map((_,k)=>`<button type="button" aria-label="Ver juego ${k+1}" data-k="${k}"></button>`).join('');
+  if(idx>=top.length)idx=0;
+  setDots();
+  car.scrollLeft=idx*car.clientWidth;
 }
 const items=()=>[...car.children];
-function goTo(k){const it=items()[k];if(!it)return;idx=k;car.scrollTo({left:it.offsetLeft-(car.clientWidth-it.offsetWidth)/2,behavior:'smooth'})}
+function goTo(k){const it=items()[k];if(!it)return;idx=k;setDots();car.scrollTo({left:it.offsetLeft,behavior:'smooth'})}
+dots.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;pausedUntil=Date.now()+8000;goTo(+b.dataset.k)});
 car.addEventListener('scroll',()=>{
-  const c=car.scrollLeft+car.clientWidth/2;let best=0,bd=1e9;
-  items().forEach((it,k)=>{const d=Math.abs(it.offsetLeft+it.offsetWidth/2-c);if(d<bd){bd=d;best=k}});
-  if(best!==idx){idx=best;[...dots.children].forEach((d,k)=>{d.className='block w-2 h-2 rounded-full '+(k===idx?'bg-or':'bg-white/40')})}
+  const best=Math.round(car.scrollLeft/(car.clientWidth||1));
+  if(best!==idx&&items()[best]){idx=best;setDots()}
 });
 ['pointerdown','touchstart','wheel'].forEach(ev=>car.addEventListener(ev,()=>{pausedUntil=Date.now()+8000},{passive:true}));
-setInterval(()=>{if(Date.now()<pausedUntil||document.hidden||car.scrollWidth<=car.clientWidth+5)return;goTo((idx+1)%items().length)},4000);
+setInterval(()=>{if(Date.now()<pausedUntil||document.hidden||items().length<2)return;goTo((idx+1)%items().length)},4000);
 
 /* ---------- Todos los juegos ---------- */
 $('grid').innerHTML=GAMES.map(g=>card(g,'','')).join('');
