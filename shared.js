@@ -26,6 +26,25 @@ TF.blocked=name=>{
   return false;
 };
 
+/* ---------- Imágenes: si el nombre falla (mayúsculas en Vercel/Linux), prueba otras variantes ---------- */
+TF.imgFix=img=>{
+  if(!img._t){
+    const u=img.getAttribute('src'),i=u.lastIndexOf('/')+1,dir=u.slice(0,i),m=u.slice(i).match(/^(.*?)(\.[^.]+)$/);
+    if(!m){img.style.display='none';return}
+    const n=m[1],e=m[2],cap=n.charAt(0).toUpperCase()+n.slice(1).toLowerCase();
+    img._t=[...new Set([dir+n.toLowerCase()+e,dir+cap+e,dir+n.toUpperCase()+e,dir+n.toLowerCase()+e.toUpperCase(),dir+cap+e.toUpperCase()])].filter(x=>x!==u);
+  }
+  const next=img._t.shift();
+  if(next)img.src=next;else img.style.display='none';
+};
+
+/* ---------- Contador de partidas por juego (se usa en el inicio) ---------- */
+TF.countPlay=()=>{
+  const id=(location.pathname.split('/').pop()||'').replace(/\.html$/,'');
+  if(!id||id==='index')return;
+  const p=load('plays_v1',{});p[id]=(Number(p[id])||0)+1;save('plays_v1',p);
+};
+
 /* ---------- Panel lateral: estadísticas + ranking + historial ---------- */
 TF.side=({logKey,rankKey,fmt,unit,bad,higher})=>{
   $('side').innerHTML=`<div class="card"><h2>Estadísticas</h2><div id="stats" class="grid grid-cols-4 gap-2 text-center"></div></div>
@@ -33,7 +52,7 @@ TF.side=({logKey,rankKey,fmt,unit,bad,higher})=>{
   <div class="card"><h2>Historial</h2><ol id="history" class="flex flex-wrap gap-1.5 max-h-[76px] overflow-hidden"></ol><p id="emptyMsg" class="text-mut text-sm">Todavía no hiciste ningún intento.</p></div>`;
   let res=load(logKey,[]), rank=load(rankKey,[]); if(!Array.isArray(res))res=[]; if(!Array.isArray(rank))rank=[];
   const api={
-    log(ms){res.push({ms});save(logKey,res.slice(-20));api.render()},
+    log(ms){res.push({ms});save(logKey,res.slice(-20));TF.countPlay();api.render()},
     rank(name,ms){const e={name,ms,ts:Date.now()};rank.push(e);rank.sort((a,b)=>(higher?b.ms-a.ms:a.ms-b.ms)||a.ts-b.ts);const pos=rank.indexOf(e)+1;rank=rank.slice(0,100);save(rankKey,rank);api.render();return pos},
     render(){
       const ok=res.filter(r=>r.ms!=null).map(r=>r.ms), best=ok.length?(higher?Math.max(...ok):Math.min(...ok)):null;
@@ -96,7 +115,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   const b=document.body,h=$('hdr');
   if(h){
     h.className='flex-none bg-white border-b border-line flex items-center justify-between gap-2 px-3 sm:px-4 py-2';
-    h.innerHTML=`<a href="./index.html" class="flex-none"><img src="./img/trodia_fest.png" alt="Trodia Fest" class="h-8 sm:h-11 w-auto max-w-[34vw]" draggable="false"></a><div class="flex items-center gap-2 sm:gap-4 min-w-0">${b.dataset.back?'<a href="./index.html" class="flex-none border-2 border-ink rounded-full px-3 py-0.5 sm:py-1 text-xs sm:text-sm font-semibold hover:bg-ink hover:text-white">Menú</a>':''}<h1 class="font-extrabold uppercase text-sm sm:text-2xl leading-none truncate">${b.dataset.title||''}</h1></div>`;
+    h.innerHTML=`<a href="./index.html" class="flex-none"><img src="./img/trodia_fest.png" alt="Trodia Fest" class="h-8 sm:h-11 w-auto max-w-[34vw]" draggable="false" onerror="TF.imgFix(this)"></a><div class="flex items-center gap-2 sm:gap-4 min-w-0">${b.dataset.back?'<a href="./index.html" class="flex-none border-2 border-ink rounded-full px-3 py-0.5 sm:py-1 text-xs sm:text-sm font-semibold hover:bg-ink hover:text-white">Menú</a>':''}<h1 class="font-extrabold uppercase text-sm sm:text-2xl leading-none truncate">${b.dataset.title||''}</h1></div>`;
   }
   if('serviceWorker' in navigator){
     const had=!!navigator.serviceWorker.controller;let pend=false;

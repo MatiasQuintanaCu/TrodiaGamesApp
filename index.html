@@ -16,55 +16,75 @@
 <script src="./shared.js"></script>
 <title>Trodia Fest | Minijuegos</title>
 <meta name="apple-mobile-web-app-title" content="Trodia Fest">
-<meta name="description" content="Minijuegos de Trodia Fest: test de reacción, ruleta de premios y pit stop.">
+<meta name="description" content="Minijuegos de Trodia Fest: reacción, pit stop, frenada y más.">
 </head>
 <body class="font-sans bg-ink text-ink flex flex-col" data-title="Minijuegos">
 <header id="hdr"></header>
 <main class="flex-1 min-h-0 overflow-y-auto">
   <div class="p-4 sm:p-8 max-w-4xl mx-auto">
-    <div class="text-white text-center py-6">
-      <p class="text-3xl sm:text-5xl font-extrabold leading-tight">¿A qué jugamos?</p>
-      <p class="text-white/70 mt-2">Elegí un minijuego</p>
-    </div>
-     <section class="card !rounded-3xl !p-4 sm:!p-6 mt-6 sm:mt-8" aria-label="Ranking global de mejores marcas">
+
+    <!-- Ranking arriba -->
+    <section class="card !rounded-3xl !p-4 sm:!p-6" aria-label="Ranking global de mejores marcas">
       <h2>Ranking global · Mejores marcas</h2>
       <div id="rkTabs" class="flex flex-wrap gap-2 mb-3"></div>
       <ol id="rkList" class="flex flex-col gap-1.5"></ol>
       <p id="rkEmpty" class="text-mut text-sm" hidden>Todavía no hay resultados en este juego. ¡Sé el primero!</p>
     </section>
-    <br>
-    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
-      <a href="./reaccion.html" class="bg-white rounded-3xl p-4 sm:p-6 active:scale-[.98] transition hover:-translate-y-1 block"><div class="h-24 sm:h-32 mb-3 flex items-center justify-center"><img src="./img/Reaccion.png" alt="" class="w-full h-full object-contain object-center" draggable="false" onerror="TF.imgFix(this)"></div><h2 class="text-base sm:text-xl font-extrabold leading-tight">Test de <span class="text-or">reacción</span></h2><p class="text-mut text-xs sm:text-sm mt-1">Salí cuando se apaguen las luces.</p></a>
-      <a href="./pitstop.html" class="bg-white rounded-3xl p-4 sm:p-6 active:scale-[.98] transition hover:-translate-y-1 block"><div class="h-24 sm:h-32 mb-3 flex items-center justify-center"><img src="./img/PITSTOP.png" alt="" class="w-full h-full object-contain object-center" draggable="false" onerror="TF.imgFix(this)"></div><h2 class="text-base sm:text-xl font-extrabold leading-tight">Pit <span class="text-or">stop</span></h2><p class="text-mut text-xs sm:text-sm mt-1">Sacá las 4 ruedas en el orden indicado.</p></a>
-      <a href="./frenada.html" class="bg-white rounded-3xl p-4 sm:p-6 active:scale-[.98] transition hover:-translate-y-1 block"><div class="h-24 sm:h-32 mb-3 flex items-center justify-center"><img src="./img/frenada.png" alt="" class="w-full h-full object-contain object-center" draggable="false" onerror="TF.imgFix(this)"></div><h2 class="text-base sm:text-xl font-extrabold leading-tight">Frenada <span class="text-or">exacta</span></h2><p class="text-mut text-xs sm:text-sm mt-1">Frená lo más cerca posible de la línea.</p></a>
-      <a href="./conos.html" class="bg-white rounded-3xl p-4 sm:p-6 active:scale-[.98] transition hover:-translate-y-1 block"><div class="h-24 sm:h-32 mb-3 flex items-center justify-center"><img src="./img/conos.png" alt="" class="w-full h-full object-contain object-center" draggable="false" onerror="TF.imgFix(this)"></div><h2 class="text-base sm:text-xl font-extrabold leading-tight">Esquivar <span class="text-or">conos</span></h2><p class="text-mut text-xs sm:text-sm mt-1">Esquivá los conos y sumá la mayor cantidad.</p></a>
-      <a href="./armar.html" class="bg-white rounded-3xl p-4 sm:p-6 active:scale-[.98] transition hover:-translate-y-1 block"><div class="h-24 sm:h-32 mb-3 flex items-center justify-center"><img src="./img/armar.png" alt="" class="w-full h-full object-contain object-center" draggable="false" onerror="TF.imgFix(this)"></div><h2 class="text-base sm:text-xl font-extrabold leading-tight">Armá el <span class="text-or">monoplaza</span></h2><p class="text-mut text-xs sm:text-sm mt-1">Arrastrá las piezas contra reloj.</p></a>
-      <a href="./presion.html" class="bg-white rounded-3xl p-4 sm:p-6 active:scale-[.98] transition hover:-translate-y-1 block"><div class="h-24 sm:h-32 mb-3 flex items-center justify-center"><img src="./img/presion.png" alt="" class="w-full h-full object-contain object-center" draggable="false" onerror="TF.imgFix(this)"></div><h2 class="text-base sm:text-xl font-extrabold leading-tight">Presión <span class="text-or">de neumáticos</span></h2><p class="text-mut text-xs sm:text-sm mt-1">Frená la barra justo en el valor objetivo.</p></a>
-      <a href="./memoria.html" class="bg-white rounded-3xl p-4 sm:p-6 active:scale-[.98] transition hover:-translate-y-1 block"><div class="h-24 sm:h-32 mb-3 flex items-center justify-center"><img src="./img/memoria.png" alt="" class="w-full h-full object-contain object-center" draggable="false" onerror="TF.imgFix(this)"></div><h2 class="text-base sm:text-xl font-extrabold leading-tight">Memoria <span class="text-or">de pista</span></h2><p class="text-mut text-xs sm:text-sm mt-1">Repetí de memoria el recorrido del monoplaza.</p></a>
-      <!-- Ruleta desactivada por ahora: para volver a mostrarla, borrá los marcadores de comentario
-      <a href="./ruleta.html" class="bg-white rounded-3xl p-4 sm:p-6 active:scale-[.98] transition hover:-translate-y-1 block"><div class="h-24 sm:h-32 mb-3 flex items-center justify-center"><img src="./img/ruleta.png" alt="" class="w-full h-full object-contain object-center" draggable="false" onerror="TF.imgFix(this)"></div><h2 class="text-base sm:text-xl font-extrabold leading-tight">Ruleta <span class="text-or">de premios</span></h2><p class="text-mut text-xs sm:text-sm mt-1">Girá y descubrí qué premio te toca.</p></a>
-      -->
-    </div>
-   
+
+    <!-- Carrusel: los 3 juegos más jugados -->
+    <section class="mt-6 sm:mt-8" aria-label="Juegos más jugados">
+      <div class="flex items-end justify-between gap-3 text-white">
+        <h2 class="font-extrabold text-lg sm:text-2xl">Más jugados</h2>
+        <span id="totalPlays" class="text-white/70 text-sm whitespace-nowrap"></span>
+      </div>
+      <div id="car" class="relative flex gap-3 overflow-x-auto snap-x snap-mandatory nosb mt-3"></div>
+      <div id="dots" class="flex justify-center gap-1.5 mt-3 sm:hidden"></div>
+    </section>
+
+    <!-- Todos los juegos -->
+    <section class="mt-6 sm:mt-8">
+      <h2 class="text-white font-extrabold text-lg sm:text-2xl mb-3">Todos los juegos</h2>
+      <div id="grid" class="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4"></div>
+    </section>
+
   </div>
 </main>
 <script>
 (() => {
+/* ---------- Catálogo de juegos ---------- */
+const GAMES=[
+  {id:'reaccion',img:'Reaccion.png',t:'Test de <span class="text-or">reacción</span>',d:'Salí cuando se apaguen las luces.'},
+  {id:'pitstop',img:'PITSTOP.png',t:'Pit <span class="text-or">stop</span>',d:'Sacá las 4 ruedas en el orden indicado.'},
+  {id:'frenada',img:'frenada.png',t:'Frenada <span class="text-or">exacta</span>',d:'Frená lo más cerca posible de la línea.'},
+  {id:'conos',img:'conos.png',t:'Esquivar <span class="text-or">conos</span>',d:'Esquivá los conos y sumá la mayor cantidad.'},
+  {id:'armar',img:'armar.png',t:'Armá el <span class="text-or">monoplaza</span>',d:'Arrastrá las piezas contra reloj.'},
+  {id:'presion',img:'presion.png',t:'Presión <span class="text-or">de neumáticos</span>',d:'Frená la barra justo en el valor objetivo.'},
+  {id:'memoria',img:'memoria.png',t:'Memoria <span class="text-or">de pista</span>',d:'Repetí de memoria el recorrido del monoplaza.'},
+  {id:'llave',img:'llave.png',t:'Lanzá <span class="text-or">la llave</span>',d:'Tirá la llave y clavala cerca del centro.'}
+  /* Ruleta desactivada por ahora: para volver a mostrarla, agregá una coma arriba y descomentá esta línea
+  ,{id:'ruleta',img:'ruleta.png',t:'Ruleta <span class="text-or">de premios</span>',d:'Girá y descubrí qué premio te toca.'}
+  */
+];
 const TABS=[
   {key:'reaction_ranking_v1',name:'Reacción',fmt:v=>v,unit:'ms'},
   {key:'pitstop_ranking_v1',name:'Pit stop',fmt:v=>(v/1000).toFixed(2),unit:'s'},
   {key:'armar_ranking_v1',name:'Monoplaza',fmt:v=>(v/1000).toFixed(2),unit:'s'},
   {key:'presion_ranking_v1',name:'Presión',fmt:v=>(v/100).toFixed(2),unit:'psi'},
-  {key:'memoria_ranking_v1',name:'Memoria',fmt:v=>v,unit:'tramos',higher:true}
+  {key:'memoria_ranking_v1',name:'Memoria',fmt:v=>v,unit:'tramos',higher:true},
+  {key:'llave_ranking_v1',name:'Llave',fmt:v=>(v/10).toFixed(1),unit:'cm'}
 ];
+const $=TF.$;
+const card=(g,badge,cls)=>`<a href="./${g.id}.html" class="${cls} bg-white rounded-3xl p-4 sm:p-6 active:scale-[.98] transition hover:-translate-y-1 block relative">${badge}<div class="h-24 sm:h-32 mb-3 flex items-center justify-center"><img src="./img/${g.img}" alt="" class="w-full h-full object-contain object-center" draggable="false" onerror="TF.imgFix(this)"></div><h2 class="text-base sm:text-xl font-extrabold leading-tight">${g.t}</h2><p class="text-mut text-xs sm:text-sm mt-1">${g.d}</p></a>`;
+
+/* ---------- Ranking ---------- */
 let cur=0;
-const tabs=TF.$('rkTabs'),list=TF.$('rkList'),empty=TF.$('rkEmpty');
-function render(){
+function renderRank(){
+  const tabs=$('rkTabs'),list=$('rkList'),empty=$('rkEmpty');
   tabs.innerHTML='';
   TABS.forEach((t,i)=>{
     const b=document.createElement('button');b.type='button';b.textContent=t.name;
     b.className='px-4 py-1.5 rounded-full text-sm font-semibold border-2 transition '+(i===cur?'bg-ink border-ink text-white':'border-line text-ink hover:border-ink');
-    b.addEventListener('click',()=>{cur=i;render()});tabs.appendChild(b);
+    b.addEventListener('click',()=>{cur=i;renderRank()});tabs.appendChild(b);
   });
   const t=TABS[cur];let rows=TF.load(t.key,[]);
   rows=(Array.isArray(rows)?rows:[]).filter(r=>r&&typeof r.ms==='number').sort((a,b)=>(t.higher?b.ms-a.ms:a.ms-b.ms)||a.ts-b.ts).slice(0,10);
@@ -76,9 +96,37 @@ function render(){
     li.children[1].textContent=r.name;list.appendChild(li);
   });
 }
-render();
-addEventListener('pageshow',render);
-addEventListener('storage',render);
+
+/* ---------- Carrusel de los 3 más jugados ---------- */
+const car=$('car'),dots=$('dots');
+let idx=0,pausedUntil=0;
+const plural=n=>n+(n===1?' partida':' partidas');
+function renderCarousel(){
+  const raw=TF.load('plays_v1',{}),plays=raw&&typeof raw==='object'?raw:{};
+  const n=g=>Number(plays[g.id])||0;
+  const top=GAMES.map((g,i)=>({g,i,n:n(g)})).sort((a,b)=>b.n-a.n||a.i-b.i).slice(0,3);
+  car.innerHTML=top.map((x,k)=>card(x.g,`<span class="absolute top-3 left-3 z-10 bg-or text-white text-xs font-bold rounded-full px-3 py-1 shadow">#${k+1} · ${plural(x.n)}</span>`,'snap-center flex-none w-[78%] sm:w-[calc((100%-1.5rem)/3)]')).join('');
+  const total=GAMES.reduce((a,g)=>a+n(g),0);
+  $('totalPlays').textContent=plural(total)+' en total';
+  dots.innerHTML=top.map((_,k)=>`<i class="block w-2 h-2 rounded-full ${k===idx?'bg-or':'bg-white/40'}"></i>`).join('');
+}
+const items=()=>[...car.children];
+function goTo(k){const it=items()[k];if(!it)return;idx=k;car.scrollTo({left:it.offsetLeft-(car.clientWidth-it.offsetWidth)/2,behavior:'smooth'})}
+car.addEventListener('scroll',()=>{
+  const c=car.scrollLeft+car.clientWidth/2;let best=0,bd=1e9;
+  items().forEach((it,k)=>{const d=Math.abs(it.offsetLeft+it.offsetWidth/2-c);if(d<bd){bd=d;best=k}});
+  if(best!==idx){idx=best;[...dots.children].forEach((d,k)=>{d.className='block w-2 h-2 rounded-full '+(k===idx?'bg-or':'bg-white/40')})}
+});
+['pointerdown','touchstart','wheel'].forEach(ev=>car.addEventListener(ev,()=>{pausedUntil=Date.now()+8000},{passive:true}));
+setInterval(()=>{if(Date.now()<pausedUntil||document.hidden||car.scrollWidth<=car.clientWidth+5)return;goTo((idx+1)%items().length)},4000);
+
+/* ---------- Todos los juegos ---------- */
+$('grid').innerHTML=GAMES.map(g=>card(g,'','')).join('');
+
+function renderAll(){renderRank();renderCarousel()}
+renderAll();
+addEventListener('pageshow',renderAll);
+addEventListener('storage',renderAll);
 })();
 </script>
 </body>

@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#07337c">
+<link rel="manifest" href="./Manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="./img/logo.png">
+<link rel="apple-touch-icon" href="./img/logo.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="preload" href="./fonts/lexend-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="./app.css">
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script src="./shared.js"></script>
+<title>Lanzá la llave | Trodia Fest</title>
+<meta name="apple-mobile-web-app-title" content="Llave">
+<meta name="description" content="Lanzá la llave inglesa y clavala lo más cerca posible del centro del blanco.">
+<style>
+#stage{background:#0a1a3f;border-color:#16306b}
+.floor{background:radial-gradient(ellipse 70% 60% at 50% 55%,#1d3b80 0%,#0d2150 55%,#071230 100%)}
+
+</style>
+</head>
+<body class="font-sans bg-ink text-ink flex flex-col" data-title='Lanzá <span class="text-or">la llave</span>' data-back="1">
+<header id="hdr"></header>
+<main class="flex-1 min-h-0 overflow-y-auto">
+ <div class="gm grid lg:grid-cols-[1.5fr_1fr] gap-3 p-3 sm:p-4 lg:h-full">
+  <div id="stage" class="border-[3px] rounded-3xl p-3 sm:p-4 flex flex-col gap-3 min-h-[max(500px,calc(100dvh-140px))] lg:min-h-0">
+    <div class="flex items-center justify-between gap-3">
+      <div class="min-w-0">
+        <div id="msg" class="font-bold uppercase tracking-wide text-white text-base sm:text-xl">Listo para lanzar</div>
+        <div id="verdict" class="text-or font-semibold min-h-[1.3em] text-sm"></div>
+        <div id="hint" class="text-[#9fb0d6] text-sm">Tocá <b>Comenzar</b> y deslizá el dedo hacia el blanco (3 lanzamientos)</div>
+      </div>
+      <div id="time" class="tm font-extrabold leading-none tabular-nums text-4xl sm:text-6xl text-white flex-none"></div>
+    </div>
+    <div id="floor" class="floor relative flex-1 min-h-[280px] rounded-2xl overflow-hidden flex items-center justify-center">
+      <svg id="sc" viewBox="0 0 400 520" class="w-full h-full block" style="touch-action:none" role="img" aria-label="Blanco y llave inglesa: deslizá el dedo hacia el blanco para lanzar">
+        <defs><g id="wrenchShape">
+          <path d="M-5 58 L-5 12 C-16 8 -18 -12 -8 -18 L-8 -8 L8 -8 L8 -18 C18 -12 16 8 5 12 L5 58 Z" fill="#d5dbe6" stroke="#8a96ab" stroke-width="2" stroke-linejoin="round"/>
+          <rect x="-5" y="34" width="10" height="24" rx="3" fill="#f25500"/>
+        </g></defs>
+        <ellipse cx="200" cy="505" rx="150" ry="10" fill="#000" opacity=".25"/>
+        <g id="tgt" style="transform:translate(200px,170px);transition:transform .35s ease">
+          <ellipse cx="0" cy="66" rx="52" ry="8" fill="#000" opacity=".25"/>
+          <circle r="60" fill="#fff"/><circle r="48" fill="#f25500"/><circle r="36" fill="#fff"/><circle r="24" fill="#f25500"/><circle r="10" fill="#07337c"/><circle r="3" fill="#fff"/>
+        </g>
+        <g id="landed" font-family="Lexend,system-ui,sans-serif" font-weight="800" font-size="16" text-anchor="middle"></g>
+        <line id="aim" x1="200" y1="470" x2="200" y2="470" stroke="#fff" stroke-width="3" stroke-dasharray="6 6" stroke-linecap="round" visibility="hidden"/>
+        <use id="wr" href="#wrenchShape" transform="translate(200 470) rotate(0) scale(1)"/>
+      </svg>
+    </div>
+    <div id="rounds" class="flex justify-center gap-2 sm:gap-3"></div>
+    <button id="startBtn" type="button" class="btn self-center">Comenzar</button>
+  </div>
+  <aside id="side" class="flex flex-col gap-3 lg:min-h-0"></aside>
+ </div>
+</main>
+<script>
+(() => {
+const {$}=TF;
+const side=TF.side({logKey:'llave_v1',rankKey:'llave_ranking_v1',fmt:v=>(v/10).toFixed(1),unit:'cm',bad:'Error'});
+const msg=$('msg'),verdict=$('verdict'),hint=$('hint'),timeEl=$('time'),startBtn=$('startBtn'),svg=$('sc');
+const tgt=$('tgt'),wr=$('wr'),aim=$('aim'),landed=$('landed'),roundsEl=$('rounds');
+const WX=200,WY=470,K=2.2,N=3,CM=.5;           /* K: cuánto se amplifica el deslizamiento; CM: centímetros por unidad del dibujo */
+const ST={IDLE:0,READY:1,DRAG:2,FLY:3,SHOW:4,NAME:5,DONE:6};
+let state=ST.IDLE,n=0,dists=[],tx=200,ty=170,p0=null,ang=0,raf=0,timer=0;
+TF.busy=()=>state>=ST.READY&&state<=ST.SHOW;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const toSvg=e=>{const pt=svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;return pt.matrixTransform(svg.getScreenCTM().inverse())};
+const place=(x,y,rot,s)=>wr.setAttribute('transform',`translate(${x} ${y}) rotate(${rot}) scale(${s})`);
+const sum=()=>dists.reduce((a,b)=>a+b,0);
+const grade=c=>c<3?'¡En el centro!':c<8?'Muy cerca':c<15?'Cerca':'Lejos';
+const rate=t=>t<10?'¡Puntería de mecánico de F1!':t<25?'Excelente puntería':t<45?'Muy buena puntería':t<80?'Buen intento':'A practicar la puntería';
+const setAim=(v,on)=>{if(on){aim.setAttribute('x2',WX+v.x);aim.setAttribute('y2',WY+v.y);aim.setAttribute('visibility','visible')}else aim.setAttribute('visibility','hidden')};
+function drawRounds(){
+  roundsEl.innerHTML=Array.from({length:N},(_,i)=>{
+    const done=i<dists.length,act=!done&&i===n&&state>=ST.READY&&state<=ST.FLY;
+    const c=done?'bg-grn text-white':act?'bg-or text-white':'bg-[#16306b] text-[#6f87b8]';
+    return `<div class="rounded-xl px-3 py-1 text-center min-w-[78px] ${c}"><div class="text-[10px] uppercase tracking-wide">Tiro ${i+1}</div><div class="font-extrabold tabular-nums">${done?dists[i].toFixed(1)+' cm':'—'}</div></div>`;
+  }).join('');
+}
+function newTarget(){
+  const px=tx,py=ty;
+  do{tx=110+Math.random()*180;ty=130+Math.random()*90}while(Math.hypot(tx-px,ty-py)<60);
+  tgt.style.transform=`translate(${tx}px,${ty}px)`;
+}
+function startGame(){clearTimeout(timer);cancelAnimationFrame(raf);dists=[];n=0;startBtn.hidden=true;timeEl.innerHTML='0.0<small>cm</small>';nextThrow()}
+function nextThrow(){
+  state=ST.READY;landed.innerHTML='';place(WX,WY,0,1);setAim(null,false);newTarget();
+  msg.textContent='Lanzamiento '+(n+1)+' de '+N;verdict.textContent='';
+  hint.textContent='Deslizá el dedo hacia el blanco: cuanto más largo el deslizamiento, más lejos llega';drawRounds();
+}
+svg.addEventListener('pointerdown',e=>{
+  if(state!==ST.READY)return;
+  e.preventDefault();svg.setPointerCapture(e.pointerId);p0=toSvg(e);state=ST.DRAG;setAim({x:0,y:0},true);
+});
+svg.addEventListener('pointermove',e=>{
+  if(state!==ST.DRAG)return;
+  const p=toSvg(e),v={x:p.x-p0.x,y:p.y-p0.y};
+  if(Math.hypot(v.x,v.y)>10){ang=Math.atan2(v.x,-v.y)*180/Math.PI;place(WX,WY,ang,1)}
+  setAim(v,true);
+});
+function release(e,cancel){
+  if(state!==ST.DRAG)return;
+  const p=toSvg(e),v={x:p.x-p0.x,y:p.y-p0.y};
+  if(cancel||v.y>-20||Math.hypot(v.x,v.y)<25){state=ST.READY;setAim(null,false);place(WX,WY,0,1);hint.textContent='Deslizá hacia arriba, hacia el blanco';return}
+  fly(v);
+}
+svg.addEventListener('pointerup',e=>release(e,false));
+svg.addEventListener('pointercancel',e=>release(e,true));
+function fly(v){
+  state=ST.FLY;setAim(null,false);drawRounds();
+  const land={x:WX+v.x*K,y:WY+v.y*K},a=ang,t0=performance.now(),dur=520;
+  (function step(){
+    const t=Math.min(1,(performance.now()-t0)/dur),e=1-Math.pow(1-t,2);
+    place(WX+(land.x-WX)*e,WY+(land.y-WY)*e,a+540*t,1-.4*e+.35*Math.sin(Math.PI*t));
+    if(t<1)raf=requestAnimationFrame(step);else hit(land);
+  })();
+}
+function hit(land){
+  state=ST.SHOW;
+  const cm=Math.hypot(land.x-tx,land.y-ty)*CM;dists.push(cm);n++;
+  landed.innerHTML=`<line x1="${land.x}" y1="${land.y}" x2="${tx}" y2="${ty}" stroke="#fff" stroke-opacity=".8" stroke-dasharray="4 4" stroke-width="2"/><circle cx="${tx}" cy="${ty}" r="4" fill="#f25500" stroke="#fff" stroke-width="2"/><text x="${clamp(land.x,50,350)}" y="${clamp(land.y-26,30,500)}" fill="#fff" stroke="#0a1a3f" stroke-width="4" paint-order="stroke">${cm.toFixed(1)} cm</text>`;
+  msg.textContent='Lanzamiento '+n+' de '+N;verdict.textContent=cm.toFixed(1)+' cm del centro · '+grade(cm);hint.textContent='';
+  timeEl.innerHTML=sum().toFixed(1)+'<small>cm</small>';drawRounds();
+  timer=setTimeout(()=>n<N?nextThrow():finish(),1600);
+}
+function finish(){
+  state=ST.NAME;const total=sum(),mm=Math.round(total*10);
+  msg.textContent='Lanzamientos completos';verdict.textContent='Distancia total '+total.toFixed(1)+' cm · '+rate(total);hint.textContent='';side.log(mm);
+  setTimeout(()=>TF.askName(total.toFixed(1)+' cm',name=>{
+    if(name){const pos=side.rank(name,mm);verdict.textContent=pos<=10?name+' · puesto #'+pos+' del ranking':name+' · fuera del top 10'}
+    state=ST.DONE;hint.textContent='Cuanto menor la distancia total, mejor';startBtn.textContent='Jugar otra vez';startBtn.hidden=false;
+  }),800);
+}
+startBtn.addEventListener('click',()=>{if(state===ST.IDLE||state===ST.DONE)startGame()});
+document.addEventListener('keydown',e=>{if(e.repeat||TF.nameOpen)return;if((e.code==='Space'||e.code==='Enter')&&(state===ST.IDLE||state===ST.DONE)){e.preventDefault();startGame()}});
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden&&TF.busy()){clearTimeout(timer);cancelAnimationFrame(raf);state=ST.IDLE;dists=[];n=0;landed.innerHTML='';setAim(null,false);place(WX,WY,0,1);timeEl.innerHTML='';msg.textContent='Prueba cancelada';drawRounds();startBtn.textContent='Comenzar';startBtn.hidden=false}
+});
+drawRounds();
+})();
+</script>
+</body>
+</html>
